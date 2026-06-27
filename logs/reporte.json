@@ -1,0 +1,11 @@
+{
+    "total_eventos": 9,
+    "eventos_por_nivel": {
+        "INFO": 2,
+        "ERROR": 5,
+        "WARNING": 2
+    },
+    "ips_sospechosos":[
+        "192.168.1.45"
+    ]
+}
