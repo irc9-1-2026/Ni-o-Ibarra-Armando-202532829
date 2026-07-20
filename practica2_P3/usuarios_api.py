@@ -72,3 +72,5 @@ if __name__ == "__main__":
     )
     print("Eliminado:", json.dumps(eliminar_usuario(2), indent=2))
 # Practica 2
+
+
