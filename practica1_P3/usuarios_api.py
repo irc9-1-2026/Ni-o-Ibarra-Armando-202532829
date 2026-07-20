@@ -51,3 +51,4 @@ if __name__ == "__main__":
     print("Nuevo:",     json.dumps(crear_usuario("Ana Torres", "Network Engineer"), indent=2))
     print("Actualizado:",json.dumps(actualizar_usuario(2, "Ana Torres", "Senior NE"), indent=2))
     print("Eliminado:", json.dumps(eliminar_usuario(2), indent=2))
+# Practica 1 completada
