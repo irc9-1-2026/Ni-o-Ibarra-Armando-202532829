@@ -1,0 +1,61 @@
+{
+  "total_pruebas": 6,
+  "exitosas": 3,
+  "fallidas": 3,
+  "resultados": [
+    {
+      "url": "https://reqres.in/api/users/1",
+      "metodo": "GET",
+      "status": 200,
+      "categoria": "2xx",
+      "tipo": "Éxito",
+      "accion": "Procesar la respuesta normalmente",
+      "exitoso": true
+    },
+    {
+      "url": "https://reqres.in/api/users/9999",
+      "metodo": "GET",
+      "status": 404,
+      "categoria": "4xx",
+      "tipo": "Not Found",
+      "accion": "Verificar que el ID o la ruta de la URL sea correcta",
+      "exitoso": false
+    },
+    {
+      "url": "https://reqres.in/api/users",
+      "metodo": "POST",
+      "status": 201,
+      "categoria": "2xx",
+      "tipo": "Éxito",
+      "accion": "Procesar la respuesta normalmente",
+      "exitoso": true
+    },
+    {
+      "url": "https://reqres.in/api/users/2",
+      "metodo": "DELETE",
+      "status": 204,
+      "categoria": "2xx",
+      "tipo": "Éxito",
+      "accion": "Procesar la respuesta normalmente",
+      "exitoso": true
+    },
+    {
+      "url": "https://jsonplaceholder.typicode.com/invalid-500-test",
+      "metodo": "GET",
+      "status": 404,
+      "categoria": "4xx",
+      "tipo": "Not Found",
+      "accion": "Verificar que el ID o la ruta de la URL sea correcta",
+      "exitoso": false
+    },
+    {
+      "url": "https://reqres.in/api/unknown/23",
+      "metodo": "GET",
+      "status": 404,
+      "categoria": "4xx",
+      "tipo": "Not Found",
+      "accion": "Verificar que el ID o la ruta de la URL sea correcta",
+      "exitoso": false
+    }
+  ]
+}
