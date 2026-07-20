@@ -1,3 +1,17 @@
+# Archivos de entorno y credenciales
 .env
+.env.local
+
+# Entornos virtuales de Python
+venv/
+env/
+ENV/
+
+# Archivos temporales y de caché de Python
 __pycache__/
 *.pyc
+
+# Carpetas del IDE o SO
+.vscode/
+.idea/
+.DS_Store
