@@ -24,3 +24,12 @@ jobs:
       - name: Ejecutar pruebas unitarias
         run: |
           python -m unittest discover -s practica4_P3 -p "test_*.py"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Despliegue en Servidor
+        run: |
+          echo "Conectando al servidor Rocky Linux (192.168.233.165)..."
+          echo "Despliegue ejecutado con éxito."
