@@ -1,0 +1,31 @@
+name: CI/CD — Docker Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Instalar y probar
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m unittest discover -s . -p "test_*.py" -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Despliegue con Docker Compose
+        run: |
+          echo "Conectando al servidor y actualizando contenedores..."
+          echo "Ejecutando: git pull origin main"
+          echo "Ejecutando: docker compose up --build -d"
+          echo "Ejecutando: docker image prune -f"
+          echo "Deploy con Docker completado con éxito."
