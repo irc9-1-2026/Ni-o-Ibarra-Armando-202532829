@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guía de {{ build.nombre }}</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --gold: #f59e0b;
+      --border: #334155;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .btn-back {
+      display: inline-block;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ENCABEZADO CON AVATAR */
+    .header-card {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .char-avatar {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      background-color: #0f172a;
+      object-fit: cover;
+      flex-shrink: 0;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    h1 { color: var(--accent); display: flex; align-items: center; gap: 12px; margin: 0 0 10px 0; flex-wrap: wrap; }
+    h3 { color: var(--gold); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-top: 0; }
+
+    .char-badge {
+      background: #2563eb;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 15px;
+      color: white;
+      text-transform: uppercase;
+    }
+
+    .char-desc { font-style: italic; color: var(--subtext); line-height: 1.5; margin: 0; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .header-card { flex-direction: column; text-align: center; }
+      h1 { justify-content: center; }
+    }
+
+    .weapon-box {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 10px;
+    }
+
+    .weapon-img {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      background: #0f172a;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .weapon-name {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .detail-item {
+      background: rgba(15, 23, 42, 0.4);
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid var(--accent);
+    }
+
+    .detail-item.const { border-left-color: var(--gold); }
+    .item-title { font-weight: bold; color: #e2e8f0; font-size: 1rem; }
+    .item-desc { font-size: 0.9rem; color: #cbd5e1; margin-top: 5px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div>
+    <a href="/" class="btn-back">← Volver al Dashboard</a>
+  </div>
+
+  <!-- ENCABEZADO CON FOTO DE PERSONAJE -->
+  <div class="card header-card">
+    <!-- IMAGEN DEL PERSONAJE -->
+    <img id="char-icon" class="char-avatar" src="" alt="{{ build.nombre }}" style="display: none;">
+    <div id="char-icon-fallback" class="char-avatar" style="display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
+    
+    <div class="header-info">
+      <h1>
+        {{ build.nombre }} 
+        <span class="char-badge" id="char-element">Genshin</span>
+      </h1>
+      <p class="char-desc" id="char-description">Cargando detalles del personaje...</p>
+    </div>
+  </div>
+
+  <!-- ARMAS Y ARTEFACTOS -->
+  <div class="grid-2">
+    <div class="card">
+      <h3>Armas Recomendadas</h3>
+
+      <p><strong>Recomendación 5★:</strong></p>
+      <div id="contenedor-arma-5"></div>
+
+      <p><strong>Recomendación 4★:</strong></p>
+      <div id="contenedor-arma-4"></div>
+    </div>
+
+    <div class="card">
+      <h3>Artefactos & Estadísticas</h3>
+      <p><strong>Set:</strong> {{ build.artefacto }}</p>
+      <p><strong>Reloj:</strong> {{ build.reloj }}</p>
+      <p><strong>Cáliz:</strong> {{ build.caliz }}</p>
+      <p><strong>Corona:</strong> {{ build.corona }}</p>
+      <p><strong>Substats:</strong> {{ build.substats }}</p>
+      <p><strong>Prioridad Talentos:</strong> <span style="color: var(--accent); font-weight: bold;">{{ build.talentos }}</span></p>
+    </div>
+  </div>
+
+  <!-- TALENTOS -->
+  <div class="card">
+    <h3>Talentos Oficiales</h3>
+    <div id="talentos-container">
+      <p style="color: var(--subtext);">Cargando talentos...</p>
+    </div>
+  </div>
+
+  <!-- CONSTELACIONES -->
+  <div class="card">
+    <h3>Constelaciones (C1 - C6)</h3>
+    <div id="constelaciones-container">
+      <p style="color: var(--subtext);">Cargando constelaciones...</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Transferencia de variables Flask a JavaScript
+  const rawCharId = '{{ char_id }}';
+  const rawArma5 = '{{ build.arma_5 }}';
+  const rawArma4 = '{{ build.arma_4 }}';
+
+  // 1. MAPEO DE PERSONAJES (Nombres en español/alias -> slug oficial en inglés)
+  const CHARACTER_MAP = {
+    "trotamundos": "wanderer",
+    "scaramouche": "wanderer",
+    "shogun raiden": "raiden",
+    "raiden shogun": "raiden",
+    "hu tao": "hu-tao",
+    "yun jin": "yun-jin",
+    "yae miko": "yae-miko",
+    "kamisato ayaka": "ayaka",
+    "kamisato ayato": "ayato",
+    "kaedehara kazuha": "kazuha",
+    "sangonomiya kokomi": "kokomi",
+    "kujou sara": "sara",
+    "shikanoin heizou": "heizou",
+    "arataki itto": "itto",
+    "xianyun": "xianyun",
+    "arlecchino": "arlecchino"
+  };
+
+  // 2. MAPEO DE ARMAS
+  const WEAPON_MAP = {
+    "agitador del trueno": "thundering-pulse",
+    "agitation del truenos": "thundering-pulse",
+    "masacradora de demonios": "hamayumi",
+    "herrumbre": "rust",
+    "estrella polar": "polar-star",
+    "alas celestiales": "skyward-harp",
+    "elegia del fin": "elegy-for-the-end",
+    "arco de favonius": "favonius-warbow",
+    "simulacro de agua": "aqua-simulacra",
+    "el camino del cazador": "hunters-path",
+    "ultimo acorde": "the-stringless",
+    "arco del sacrificio": "sacrificial-bow",
+    "semblante de la luna roja": "crimson-moons-semblance",
+    "baculo de homa": "staff-of-homa",
+    "balada de los fiordos": "ballad-of-the-fjords",
+    "borla blanca": "white-tassel",
+    "halcon de jade": "primordial-jade-winged-spear",
+    "luz del segador": "engulfing-lightning",
+    "la captura": "the-catch",
+    "lanza de favonius": "favonius-lance",
+    "perforadora de montanas": "vortex-vanquisher",
+    "pua celestial": "skyward-spine",
+    "lanza del duelo": "deathmatch",
+    "clorofilo fulgurante": "light-of-foliar-incision",
+    "cortador de jafe": "primordial-jade-cutter",
+    "cortador de jade": "primordial-jade-cutter",
+    "espina de hierro": "iron-sting",
+    "espada negra": "the-black-sword",
+    "reflejo de las tinieblas": "mistsplitter-reforged",
+    "hoja afilada celestial": "skyward-blade",
+    "espada de favonius": "favonius-sword",
+    "espada del sacrificio": "sacrificial-sword",
+    "amenoma kageuchi": "amenoma-kageuchi",
+    "lapida del lobo": "wolfs-gravestone",
+    "emblema del mar de juncos": "beacon-of-the-reed-sea",
+    "sombra de la marea": "tidal-shadow",
+    "orgullo celestial": "skyward-pride",
+    "cornamenta roja": "redhorn-stonethresher",
+    "sombra del hierro": "whiteblind",
+    "suenos milenarios": "a-thousand-floating-dreams",
+    "axioma de la kagura": "kaguras-verity",
+    "sinfonia de los cazadores": "the-widsith",
+    "prototipo ambar": "prototype-amber",
+    "oracion a los vientos perdidos": "lost-prayer-to-the-sacred-winds"
+  };
+
+  function normalizarTexto(texto) {
+    if (!texto) return '';
+    return String(texto).toLowerCase()
+      .trim()
+      .replace(/[áä]/g, 'a')
+      .replace(/[éë]/g, 'e')
+      .replace(/[íï]/g, 'i')
+      .replace(/[óö]/g, 'o')
+      .replace(/[úü]/g, 'u')
+      .replace(/ñ/g, 'n');
+  }
+
+  // RENDERIZADO DE ARMAS
+  function renderizarArmas(textoArmas, contenedorId) {
+    const contenedor = document.getElementById(contenedorId);
+    if (!contenedor) return;
+    contenedor.innerHTML = '';
+
+    if (!textoArmas || String(textoArmas).trim() === '') {
+      contenedor.innerHTML = '<p style="color: var(--subtext);">Sin recomendación.</p>';
+      return;
+    }
+
+    const lista = String(textoArmas).split('/');
+
+    lista.forEach(function(nombre) {
+      const nombreLimpio = nombre.trim();
+      const key = normalizarTexto(nombreLimpio);
+
+      const slug = WEAPON_MAP[key] || key.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const imgUrl = "https://genshin.jmp.blue/weapons/" + slug + "/icon";
+
+      const div = document.createElement('div');
+      div.className = 'weapon-box';
+
+      div.innerHTML = 
+        '<img src="' + imgUrl + '" class="weapon-img" alt="' + nombreLimpio + '" ' +
+             'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
+        '<div class="weapon-img" style="display:none; align-items:center; justify-content:center; background:#334155; color:#38bdf8; font-weight:bold; font-size:1.2rem;">⚔️</div>' +
+        '<span class="weapon-name">' + nombreLimpio + '</span>';
+
+      contenedor.appendChild(div);
+    });
+  }
+
+  try {
+    renderizarArmas(rawArma5, 'contenedor-arma-5');
+    renderizarArmas(rawArma4, 'contenedor-arma-4');
+  } catch (e) {
+    console.error("Error cargando armas:", e);
+  }
+
+  // 3. CARGAR IMAGEN Y DATOS DEL PERSONAJE
+  const keyChar = normalizarTexto(rawCharId);
+  const cleanCharId = CHARACTER_MAP[keyChar] || keyChar.replace(/\s+/g, '-');
+
+  // Configurar imagen de avatar del personaje
+  const charImgElem = document.getElementById("char-icon");
+  const charFallbackElem = document.getElementById("char-icon-fallback");
+  const avatarUrl = "https://genshin.jmp.blue/characters/" + cleanCharId + "/icon";
+
+  charImgElem.src = avatarUrl;
+  charImgElem.onload = function() {
+    charImgElem.style.display = "block";
+    charFallbackElem.style.display = "none";
+  };
+  charImgElem.onerror = function() {
+    charImgElem.style.display = "none";
+    charFallbackElem.style.display = "flex";
+  };
+
+  // Renderizar Datos
+  function renderDatosPersonaje(data) {
+    document.getElementById("char-element").innerText = data.vision || "Genshin";
+    document.getElementById("char-description").innerText = data.description || "Personaje de Genshin Impact.";
+
+    // Talentos
+    const talentosContainer = document.getElementById("talentos-container");
+    talentosContainer.innerHTML = "";
+    if (data.skillTalents && data.skillTalents.length > 0) {
+      data.skillTalents.forEach(function(t) {
+        const unlockText = t.unlock ? t.unlock : 'Talento';
+        talentosContainer.innerHTML += 
+          '<div class="detail-item">' +
+            '<div class="item-title">' + t.name + ' <small style="color: var(--accent);">(' + unlockText + ')</small></div>' +
+            '<div class="item-desc">' + t.description + '</div>' +
+          '</div>';
+      });
+    } else {
+      talentosContainer.innerHTML = "<p style='color: var(--subtext);'>No hay información de talentos disponible.</p>";
+    }
+
+    // Constelaciones
+    const constContainer = document.getElementById("constelaciones-container");
+    constContainer.innerHTML = "";
+    if (data.constellations && data.constellations.length > 0) {
+      data.constellations.forEach(function(c, index) {
+        const num = index + 1;
+        constContainer.innerHTML += 
+          '<div class="detail-item const">' +
+            '<div class="item-title">C' + num + ' - ' + c.name + '</div>' +
+            '<div class="item-desc">' + c.description + '</div>' +
+          '</div>';
+      });
+    } else {
+      constContainer.innerHTML = "<p style='color: var(--subtext);'>No hay información de constelaciones disponible.</p>";
+    }
+  }
+
+  // Petición a la API
+  fetch('https://genshin.jmp.blue/characters/' + cleanCharId + '?lang=es')
+    .then(function(res) {
+      if (!res.ok) throw new Error("Fallo API español");
+      return res.json();
+    })
+    .then(function(data) {
+      renderDatosPersonaje(data);
+    })
+    .catch(function() {
+      fetch('https://genshin.jmp.blue/characters/' + cleanCharId)
+        .then(function(resEng) {
+          if (!resEng.ok) throw new Error("Fallo API inglés");
+          return resEng.json();
+        })
+        .then(function(dataEng) {
+          renderDatosPersonaje(dataEng);
+        })
+        .catch(function(errFinal) {
+          console.warn("No se pudo obtener la información completa:", errFinal);
+          document.getElementById("char-element").innerText = "Genshin";
+          document.getElementById("char-description").innerText = "Información del personaje procesada.";
+          document.getElementById("talentos-container").innerHTML = "<p style='color: var(--subtext);'>Información no disponible temporalmente.</p>";
+          document.getElementById("constelaciones-container").innerHTML = "<p style='color: var(--subtext);'>Información no disponible temporalmente.</p>";
+        });
+    });
+</script>
+
+</body>
+</html>

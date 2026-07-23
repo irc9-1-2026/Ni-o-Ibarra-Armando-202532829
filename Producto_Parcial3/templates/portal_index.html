@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Personajes Genshin</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --border: #334155;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text);
+      margin: 0;
+      padding: 30px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header-title {
+      text-align: center;
+      color: var(--accent);
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+    }
+
+    /* Buscador */
+    .search-box {
+      max-width: 500px;
+      margin: 0 auto 30px auto;
+      display: flex;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 25px;
+      border: 1px solid var(--border);
+      background-color: var(--card-bg);
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent);
+    }
+
+    /* Grilla con TODOS los personajes */
+    .grid-chars {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 20px;
+    }
+
+    .char-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.2s, border-color 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .char-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent);
+    }
+
+    .char-card img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: var(--bg-dark);
+      margin-bottom: 10px;
+      object-fit: cover;
+      border: 2px solid var(--border);
+    }
+
+    .char-card h3 {
+      margin: 5px 0 0 0;
+      font-size: 1rem;
+      color: var(--accent);
+      text-transform: capitalize;
+    }
+
+    .loading {
+      text-align: center;
+      color: var(--subtext);
+      font-size: 1.2rem;
+      grid-column: 1 / -1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1 class="header-title">Guias de Personajes Genshin Impact</h1>
+
+  <!-- BUSCADOR -->
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Buscar personaje por nombre..." onkeyup="filtrarPersonajes()">
+  </div>
+
+  <!-- GRILLA -->
+  <div class="grid-chars" id="charactersContainer">
+    <div class="loading">Cargando todos los personajes de Genshin Impact...</div>
+  </div>
+</div>
+
+<script>
+  let todosLosPersonajes = [];
+
+  // Petición a la API externa para traer la lista completa
+  fetch('https://genshin.jmp.blue/characters')
+    .then(res => res.json())
+    .then(data => {
+      todosLosPersonajes = data;
+      renderizarPersonajes(todosLosPersonajes);
+    })
+    .catch(err => {
+      console.error("Error al cargar la lista de personajes:", err);
+      document.getElementById('charactersContainer').innerHTML = `
+        <div class="loading" style="color: #ef4444;">Error al conectar con la base de datos de personajes.</div>`;
+    });
+
+  function renderizarPersonajes(lista) {
+    const container = document.getElementById('charactersContainer');
+    container.innerHTML = "";
+
+    if (lista.length === 0) {
+      container.innerHTML = `<div class="loading">No se encontraron personajes.</div>`;
+      return;
+    }
+
+    lista.forEach(charId => {
+      const nombreFormateado = charId.replace(/-/g, ' ');
+      const iconUrl = `https://genshin.jmp.blue/characters/${charId}/icon`;
+
+      const cardHtml = `
+        <a href="/guia?personaje=${charId}" class="char-card" data-name="${nombreFormateado.toLowerCase()}">
+          <img src="${iconUrl}" alt="${nombreFormateado}" onerror="this.src='https://via.placeholder.com/80?text=Genshin'">
+          <h3>${nombreFormateado}</h3>
+        </a>
+      `;
+      container.innerHTML += cardHtml;
+    });
+  }
+
+  function filtrarPersonajes() {
+    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filtrados = todosLosPersonajes.filter(charId => 
+      charId.replace(/-/g, ' ').toLowerCase().includes(query)
+    );
+    renderizarPersonajes(filtrados);
+  }
+</script>
+
+</body>
+</html>

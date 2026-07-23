@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Servicio 1: Aplicación Backend en Flask
+  web:
+    build: .                 # Compila la imagen usando el Dockerfile del proyecto
+    ports:
+      - "5000:5000"          # Expone el puerto 5000 del contenedor al host
+    environment:
+      - FLASK_ENV=production # Configura el entorno de ejecución en modo producción
+    restart: always          # Reinicia el contenedor automáticamente si falla
+
+  # Servicio 2: Servidor Web Proxy Inverso (Nginx)
+  nginx:
+    image: nginx:alpine      # Utiliza una imagen ligera basada en Alpine Linux
+    ports:
+      - "80:80"              # Redirige el tráfico web estándar (Puerto 80)
+    volumes:
+      # Monta la configuración personalizada de Nginx en modo solo lectura (:ro)
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web                  # Garantiza que Flask inicie antes que Nginx
