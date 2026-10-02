@@ -1,0 +1,9 @@
+[webservers]
+web1 ansible_host=10.10.13.81 ansible_user=root
+
+[dbservers]
+db1 ansible_host=10.10.13.80 ansible_user=root
+
+[lamp:children]
+webservers
+dbservers

@@ -1,0 +1,44 @@
+---
+# Se ejecuta SOLO en el nodo master
+
+- name: Initialize Kubernetes Master
+  command: >
+    kubeadm init
+    --pod-network-cidr={{ pod_network_cidr }}
+    --cri-socket={{ cri_socket }}
+    --ignore-preflight-errors=Swap
+  register: kubeadm_init
+  args:
+    creates: /etc/kubernetes/admin.conf
+
+- name: Crear directorio .kube para root
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0755'
+
+- name: Copiar kubeconfig de admin
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Install Flannel CNI
+  command: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+  environment:
+    KUBECONFIG: /root/.kube/config
+  when: kubeadm_init.rc == 0 or kubeadm_init is skipped
+
+- name: Get join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+  when: kubeadm_init.rc == 0 or kubeadm_init is skipped
+
+- name: Save join command to a file (referencia manual)
+  copy:
+    content: "{{ join_command.stdout }}\n"
+    dest: /root/kubeadm_join_command.sh
+    mode: '0700'

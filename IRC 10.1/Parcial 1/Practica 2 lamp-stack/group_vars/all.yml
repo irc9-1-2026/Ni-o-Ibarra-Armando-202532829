@@ -1,0 +1,8 @@
+---
+firewall_allowed_tcp_ports:
+  - 22
+  - 80
+  - 443
+
+timezone: "America/Mexico_City"
+security_autoupdate_enabled: true

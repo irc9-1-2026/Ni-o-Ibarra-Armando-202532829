@@ -1,0 +1,13 @@
+---
+- name: Prueba de conectividad Windows
+  hosts: windows
+  gather_facts: no
+  
+  tasks:
+    - name: Ping módulo Windows
+      win_ping:
+      register: ping_result
+      
+    - name: Mostrar resultado del ping
+      debug:
+        msg: "{{ ping_result }}"

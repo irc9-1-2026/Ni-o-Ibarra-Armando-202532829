@@ -1,0 +1,27 @@
+---
+- name: Deploy Kubernetes Cluster
+  hosts: all
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Include common tasks (containerd, kubeadm)
+      include_role:
+        name: common
+
+- name: Configure Kubernetes Master
+  hosts: master
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Include master tasks
+      include_role:
+        name: master
+
+- name: Join Workers to Cluster
+  hosts: workers
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Include worker tasks
+      include_role:
+        name: worker

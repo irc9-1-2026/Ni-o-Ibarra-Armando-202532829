@@ -1,0 +1,16 @@
+---
+apache_listen_port: 80
+apache_vhosts:
+  - servername: "webapp.local"
+    documentroot: "/var/www/webapp"
+    extra_parameters: |
+      ErrorLog /var/log/httpd/webapp-error.log
+      CustomLog /var/log/httpd/webapp-access.log combined
+
+php_packages:
+  - php
+  - php-cli
+  - php-mysqlnd
+  - php-zip
+  - php-gd
+  - php-xml

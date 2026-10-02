@@ -1,0 +1,42 @@
+---
+- name: Instalar Apache
+  dnf:
+    name: httpd
+    state: present
+
+- name: Instalar PHP y módulos necesarios
+  dnf:
+    name: "{{ php_packages }}"
+    state: present
+  notify: restart apache
+
+- name: Crear directorio DocumentRoot
+  file:
+    path: "{{ apache_vhosts[0].documentroot }}"
+    state: directory
+    owner: apache
+    group: apache
+    mode: '0755'
+
+- name: Crear archivo info.php
+  template:
+    src: info.php.j2
+    dest: "{{ apache_vhosts[0].documentroot }}/info.php"
+    owner: apache
+    group: apache
+    mode: '0644'
+
+- name: Configurar VirtualHost de Apache
+  template:
+    src: vhost.conf.j2
+    dest: "/etc/httpd/conf.d/webapp.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart apache
+
+- name: Iniciar y habilitar Apache
+  service:
+    name: httpd
+    state: started
+    enabled: yes

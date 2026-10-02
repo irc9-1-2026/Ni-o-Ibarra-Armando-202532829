@@ -1,0 +1,22 @@
+---
+# Se ejecuta en TODOS los nodos workers
+ 
+- name: Wait for master to be ready
+  wait_for:
+    # FIX real: la versión anterior usaba groups['master'][0], que es el
+    # texto literal "master" (nombre de grupo de Ansible), no una IP ni un
+    # hostname resoluble. Los workers no tienen DNS para resolver "master",
+    # así que esto siempre daba "Timeout when waiting for master:6443"
+    # aunque el puerto sí estuviera abierto. Ahora se toma la IP real
+    # (ansible_host) del inventario vía hostvars.
+    host: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
+    port: 6443
+    delay: 10
+    timeout: 300
+ 
+- name: Join worker to cluster
+  command: >
+    {{ hostvars[groups['master'][0]]['join_command']['stdout'] }}
+    --cri-socket={{ cri_socket }}
+  args:
+    creates: /etc/kubernetes/kubelet.conf

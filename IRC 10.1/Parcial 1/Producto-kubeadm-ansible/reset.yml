@@ -1,0 +1,73 @@
+---
+# Ejecutar ESTE playbook primero, en las 3 máquinas, antes de volver a
+# correr playbook.yml. Deja las VMs en un estado limpio para que la
+# reinstalación no choque con restos del intento anterior (paquetes a
+# medio instalar, cluster a medio inicializar, reglas de iptables, etc.)
+- name: Limpiar intento anterior en todos los nodos
+  hosts: all
+  become: true
+  tasks:
+    - name: Resetear kubeadm (ignora error si nunca se inicializó)
+      command: kubeadm reset -f
+      ignore_errors: true
+ 
+    - name: Detener containerd si existe
+      service:
+        name: containerd
+        state: stopped
+      ignore_errors: true
+ 
+    - name: Detener docker si existe (de un intento previo)
+      service:
+        name: docker
+        state: stopped
+      ignore_errors: true
+ 
+    - name: Eliminar paquetes de Kubernetes, Docker y containerd
+      dnf:
+        name:
+          - kubeadm
+          - kubelet
+          - kubectl
+          - kubernetes-cni
+          - cri-tools
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: absent
+      ignore_errors: true
+ 
+    - name: Eliminar directorios de estado de Kubernetes/containerd/CNI
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/kubernetes
+        - /var/lib/kubelet
+        - /var/lib/etcd
+        - /etc/cni
+        - /opt/cni
+        - /etc/containerd
+        - /var/lib/containerd
+        - /root/.kube
+        - /etc/yum.repos.d/kubernetes.repo
+        - /etc/yum.repos.d/docker-ce.repo
+        - /root/kubeadm_join_command.sh
+ 
+    - name: Limpiar reglas de iptables dejadas por kube-proxy/flannel
+      command: "{{ item }}"
+      loop:
+        - iptables -F
+        - iptables -X
+        - iptables -t nat -F
+        - iptables -t nat -X
+        - iptables -t mangle -F
+        - iptables -t mangle -X
+      ignore_errors: true
+ 
+    - name: Eliminar interfaces de red residuales de CNI
+      command: "ip link delete {{ item }}"
+      loop:
+        - cni0
+        - flannel.1
+      ignore_errors: true

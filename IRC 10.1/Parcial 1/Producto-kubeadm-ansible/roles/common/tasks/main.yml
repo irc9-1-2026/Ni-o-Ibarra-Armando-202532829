@@ -1,0 +1,119 @@
+---
+# Tareas ejecutadas en TODAS las máquinas (master y workers)
+ 
+- name: Disable SELinux (temporal)
+  command: setenforce 0
+  ignore_errors: yes
+ 
+- name: Disable SELinux (persistente)
+  lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: 'SELINUX=disabled'
+ 
+- name: Disable Firewalld
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+ 
+- name: Disable Swap
+  command: swapoff -a
+  ignore_errors: yes
+ 
+- name: Comment swap in /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+.*)$'
+    replace: '#\1'
+ 
+- name: Cargar módulo overlay
+  modprobe:
+    name: overlay
+    state: present
+ 
+- name: Cargar módulo br_netfilter
+  modprobe:
+    name: br_netfilter
+    state: present
+ 
+- name: Persistir carga de módulos en el arranque
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+ 
+- name: Configurar sysctl requerido por Kubernetes
+  copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+ 
+- name: Aplicar sysctl
+  command: sysctl --system
+ 
+- name: Agregar repo de Docker (para obtener containerd.io)
+  yum_repository:
+    name: docker-ce
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/centos/9/$basearch/stable
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    gpgcheck: yes
+    enabled: yes
+ 
+- name: Instalar containerd
+  dnf:
+    name: containerd.io
+    state: present
+ 
+- name: Generar configuración por defecto de containerd
+  # FIX real: la versión anterior tenía "when: not containerd_config.stat.exists"
+  # y eso dejaba pasar un config.toml viejo/roto si la VM ya traía containerd
+  # de un intento manual anterior (nos pasó en el master). Ahora siempre se
+  # regenera limpio.
+  shell: containerd config default > /etc/containerd/config.toml
+ 
+- name: Activar SystemdCgroup en containerd (crítico en Rocky 9 / cgroups v2)
+  replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+ 
+- name: Iniciar y habilitar containerd
+  service:
+    name: containerd
+    state: restarted
+    enabled: yes
+ 
+- name: Add Kubernetes repo
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes
+    baseurl: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/rpm/
+    gpgkey: https://pkgs.k8s.io/core:/stable:/v{{ kube_version }}/rpm/repodata/repomd.xml.key
+    gpgcheck: yes
+    enabled: yes
+ 
+- name: Install kubeadm, kubelet, kubectl
+  dnf:
+    name:
+      - kubeadm
+      - kubelet
+      - kubectl
+    state: present
+    disable_excludes: kubernetes
+ 
+- name: Desenmascarar kubelet por si quedó bloqueado de un intento manual anterior
+  # FIX real: en el master nos topamos con "Unit file kubelet.service is masked"
+  # de una prueba manual previa a este proyecto. Este paso lo previene.
+  command: systemctl unmask kubelet
+  ignore_errors: yes
+ 
+- name: Enable kubelet
+  service:
+    name: kubelet
+    enabled: yes

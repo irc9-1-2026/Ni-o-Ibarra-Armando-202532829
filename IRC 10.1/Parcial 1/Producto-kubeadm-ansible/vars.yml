@@ -1,0 +1,9 @@
+---
+kube_version: "1.28"
+pod_network_cidr: "10.244.0.0/16"
+docker_version: "24.0"       # se conserva por paridad con la especificación original; ya no se usa
+                              # (Docker CE no está disponible en Rocky 9 y Kubernetes 1.24+ no
+                              # soporta Docker como runtime — ver roles/common)
+firewalld_enabled: false      # declarada igual que en la especificación; tampoco se referencia
+selinux_enabled: false        # en ninguna tarea del original — se mantiene por fidelidad al documento
+cri_socket: "unix:///run/containerd/containerd.sock"  # requerida por kubeadm init/join al usar containerd

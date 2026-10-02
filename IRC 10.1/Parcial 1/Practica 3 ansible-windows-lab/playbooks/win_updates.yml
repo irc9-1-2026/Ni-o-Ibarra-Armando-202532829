@@ -1,0 +1,32 @@
+---
+- name: Gestionar actualizaciones de Windows
+  hosts: windows
+  gather_facts: yes
+  
+  tasks:
+    - name: Buscar actualizaciones disponibles
+      win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+        state: searched
+      register: update_search
+      
+    - name: Mostrar actualizaciones disponibles
+      debug:
+        msg: "Total: {{ update_search.updates | length }} actualizaciones"
+      
+    - name: Instalar actualizaciones
+      win_updates:
+        category_names:
+          - SecurityUpdates
+          - CriticalUpdates
+        state: installed
+      register: update_result
+      when: update_search.updates is defined and (update_search.updates | length) > 0
+      
+    - name: Reiniciar si es necesario
+      win_reboot:
+        msg: "Reiniciando después de actualizar"
+        pre_reboot_delay: 15
+      when: update_result.reboot_required | default(false)

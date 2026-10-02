@@ -1,0 +1,8 @@
+---
+- name: Asegurarse de que los paquetes básicos estén instalados
+  dnf:
+    name:
+      - vim
+      - curl
+      - wget
+    state: present

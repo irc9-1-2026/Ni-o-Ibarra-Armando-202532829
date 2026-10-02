@@ -1,0 +1,22 @@
+---
+- name: Instalar paquetes de MariaDB
+  dnf:
+    name:
+      - mariadb-server
+      - mariadb
+    state: present
+
+- name: Iniciar y habilitar MariaDB
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Configurar MySQL
+  template:
+    src: my.cnf.j2
+    dest: /etc/my.cnf.d/custom.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart mysql

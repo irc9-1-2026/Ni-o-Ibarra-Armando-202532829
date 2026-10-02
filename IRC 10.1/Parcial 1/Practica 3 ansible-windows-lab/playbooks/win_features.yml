@@ -1,0 +1,22 @@
+---
+- name: Gestionar características de Windows
+  hosts: windows
+  gather_facts: yes
+  
+  tasks:
+    - name: Instalar IIS (Web-Server)
+      win_feature:
+        name: Web-Server
+        state: present
+        include_management_tools: yes
+      register: iis_result
+      
+    - name: Mostrar resultado de instalación
+      debug:
+        msg: "IIS Installation: {{ iis_result }}"
+      
+    - name: Reiniciar si es necesario
+      win_reboot:
+        msg: "Reiniciando después de instalar IIS"
+        pre_reboot_delay: 15
+      when: iis_result.reboot_required | default(false)
