@@ -7,7 +7,7 @@ metadata:
   namespace: microservicios
 type: Opaque
 stringData:
-  JWT_SECRET: "f8d92a1e4b7c30958e1d2c3a4b5c6d7e8f90123456789abcdef0123456789abc"
+  JWT_SECRET: "texto secreto"
 ---
 # ConfigMap: configuracion no sensible
 apiVersion: v1
