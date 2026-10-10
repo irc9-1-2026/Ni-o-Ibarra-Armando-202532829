@@ -1,0 +1,21 @@
+# Secret: datos sensibles (en un proyecto real NO se sube a git;
+# se crea con: kubectl create secret generic app-secret --from-literal=JWT_SECRET=...)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+  namespace: microservicios
+type: Opaque
+stringData:
+  JWT_SECRET: "f8d92a1e4b7c30958e1d2c3a4b5c6d7e8f90123456789abcdef0123456789abc"
+---
+# ConfigMap: configuracion no sensible
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: microservicios
+data:
+  AUTH_MONGO_URI: mongodb://mongo-auth:27017/authdb
+  TASKS_MONGO_URI: mongodb://mongo-tasks:27017/tasksdb
+  TASKS_URL: http://tasks-service:5000
