@@ -1,161 +1,285 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interfaz Ansible</title>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #38bdf8;
-            --accent-hover: #0284c7;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --terminal-bg: #090d16;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal DevOps - Control Automático</title>
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card-action {
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: none;
+      border-radius: 12px;
+    }
+    .card-action:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    }
+    .icon-box { font-size: 2.2rem; margin-bottom: 8px; }
+    
+    /* Consola compacta */
+    #consoleOutput {
+      background-color: #1e1e1e;
+      color: #00ff66;
+      font-family: 'Courier New', Courier, monospace;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.85rem;
+      max-height: 180px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 2rem;
-            display: flex;
-            justify-content: center;
-        }
+    /* Tarjeta de Resumen Visual Dinámico */
+    .summary-card {
+      border-left: 6px solid #6c757d;
+      border-radius: 10px;
+    }
+    .summary-card.success { border-left-color: #198754; }
+    .summary-card.danger { border-left-color: #dc3545; }
+    .summary-card.warning { border-left-color: #ffc107; }
 
-        .container {
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .header {
-            margin-bottom: 2rem;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 1rem;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 1.8rem;
-            color: var(--accent);
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        select {
-            width: 100%;
-            padding: 0.75rem;
-            border-radius: 6px;
-            background-color: #0f172a;
-            color: var(--text-main);
-            border: 1px solid #334155;
-            font-size: 1rem;
-            margin-bottom: 1.25rem;
-            outline: none;
-        }
-
-        select:focus {
-            border-color: var(--accent);
-        }
-
-        .btn-run {
-            background-color: var(--accent);
-            color: #0f172a;
-            font-weight: 700;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            width: 100%;
-        }
-
-        .btn-run:hover {
-            background-color: var(--accent-hover);
-        }
-
-        .terminal-container {
-            background-color: var(--terminal-bg);
-            border-radius: 8px;
-            border: 1px solid #334155;
-            overflow: hidden;
-        }
-
-        .terminal-header {
-            background-color: #1e293b;
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #334155;
-        }
-
-        pre {
-            margin: 0;
-            padding: 1.25rem;
-            color: #4ade80;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 450px;
-            overflow-y: auto;
-        }
-    </style>
+    .result-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+      border: 1px solid #e9ecef;
+      color: #212529;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>🚀 Control Hub de Automatización Ansible</h1>
+  <div class="container py-4">
+    <!-- Encabezado -->
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-dark">🚀 Panel de Operaciones del Servidor</h2>
+      <p class="text-muted small">Ejecuta tareas automatizadas en Rocky Linux de forma rápida y sencilla.</p>
     </div>
 
-    <div class="card">
-        <form method="POST">
-            <label for="playbook">Selecciona la tarea a ejecutar en la VM (192.168.56.107):</label>
-            <select name="playbook_file" id="playbook">
-                <option value="ejemplo.yml" {% if playbook_actual == 'ejemplo.yml' %}selected{% endif %}>
-                    ⚡ 1. Prueba de Conexión Básica (Smoke Test)
-                </option>
-                <option value="diagnostico.yml" {% if playbook_actual == 'diagnostico.yml' %}selected{% endif %}>
-                    📊 2. Diagnóstico de Salud y Rendimiento (RAM/CPU)
-                </option>
-                <option value="backup.yml" {% if playbook_actual == 'backup.yml' %}selected{% endif %}>
-                    📦 3. Respaldo de Seguridad Express (Archivos y Configs)
-                </option>
-                <option value="auditoria_forense.yml" {% if playbook_actual == 'auditoria_forense.yml' %}selected{% endif %}>
-                    🕵️ 4. Auditoría Forense y Rastreos SSH (MAC, VPN y Geolocalización)
-                </option>
-            </select>
-            <button type="submit" class="btn-run">▶ Ejecutar Playbook</button>
-        </form>
-    </div>
-
-    {% if output %}
-    <div class="terminal-container">
-        <div class="terminal-header">
-            <span>Salida de Consola — {{ playbook_actual }}</span>
-            <span>Estado: Finalizado</span>
+    <!-- Tarjetas de Acciones Rápida -->
+    <div class="row g-3 mb-4">
+      
+      <!-- Acción 1: Conexión -->
+      <div class="col-md-3">
+        <div class="card h-100 shadow-sm p-2 card-action text-center">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <div class="icon-box">⚡</div>
+              <h6 class="card-title fw-bold">Prueba de Conexión</h6>
+              <p class="card-text text-muted small" style="font-size: 0.8rem;">Verifica la respuesta del servidor.</p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="confirmarAccion('conexion.yml', 'Prueba de Conexión')">Probar Conexión</button>
+          </div>
         </div>
-        <pre>{{ output }}</pre>
-    </div>
-    {% endif %}
-</div>
+      </div>
 
+      <!-- Acción 2: Salud del Sistema -->
+      <div class="col-md-3">
+        <div class="card h-100 shadow-sm p-2 card-action text-center">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <div class="icon-box">🩺</div>
+              <h6 class="card-title fw-bold">Salud del Sistema</h6>
+              <p class="card-text text-muted small" style="font-size: 0.8rem;">Muestra uso de CPU, RAM y disco.</p>
+            </div>
+            <button class="btn btn-outline-info btn-sm w-100 mt-2" onclick="confirmarAccion('diagnostico.yml', 'Salud del Sistema')">Revisar Salud</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acción 3: Respaldo -->
+      <div class="col-md-3">
+        <div class="card h-100 shadow-sm p-2 card-action text-center">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <div class="icon-box">📦</div>
+              <h6 class="card-title fw-bold">Copia de Seguridad</h6>
+              <p class="card-text text-muted small" style="font-size: 0.8rem;">Genera un paquete de respaldo comprimido.</p>
+            </div>
+            <button class="btn btn-outline-warning btn-sm w-100 mt-2" onclick="confirmarAccion('backup.yml', 'Copia de Seguridad')">Hacer Backup</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acción 4: Auditoría Forense -->
+      <div class="col-md-3">
+        <div class="card h-100 shadow-sm p-2 card-action text-center">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <div class="icon-box">🔍</div>
+              <h6 class="card-title fw-bold">Auditoría de Seguridad</h6>
+              <p class="card-text text-muted small" style="font-size: 0.8rem;">Analiza accesos e intentos SSH.</p>
+            </div>
+            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="confirmarAccion('auditoria_forense.yml', 'Auditoría de Seguridad')">Auditar Ahora</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TARJETA DINÁMICA DE RESULTADOS VISUALES -->
+    <div class="card shadow-sm mb-3 summary-card" id="summaryCard">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-bold mb-0" id="summaryTitle">📋 Resumen de Resultado</h5>
+          <span id="statusBadge" class="badge bg-secondary">Sin ejecuciones en curso</span>
+        </div>
+        <div id="summaryContent" class="text-muted small">
+          Presiona cualquiera de los botones de arriba para ver los resultados explicados de forma clara.
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSOLA COMPACTA TÉCNICA -->
+    <div class="card shadow-sm">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
+        <span class="small fw-bold">💻 Salida Detallada de Consola (Ansible Log)</span>
+        <div>
+          <button class="btn btn-sm btn-outline-light py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsole" aria-expanded="true">
+            👁️ Mostrar/Ocultar
+          </button>
+        </div>
+      </div>
+      <div class="collapse show" id="collapseConsole">
+        <div class="card-body bg-dark p-2">
+          <div id="consoleOutput">Esperando instrucción...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal de Confirmación -->
+  <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalTitle">Confirmar Acción</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalBody">
+          ¿Estás seguro de que deseas ejecutar esta tarea?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnEjecutarModal">Sí, Ejecutar Tarea</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let playbookSeleccionado = '';
+    let nombreTareaSeleccionada = '';
+    const modalConfirm = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+    function confirmarAccion(playbookFile, nombreAmigable) {
+      playbookSeleccionado = playbookFile;
+      nombreTareaSeleccionada = nombreAmigable;
+      document.getElementById('modalTitle').innerText = `Confirmación: ${nombreAmigable}`;
+      document.getElementById('modalBody').innerText = `Vas a ejecutar la tarea "${nombreAmigable}" en el servidor Rocky Linux. ¿Deseas continuar?`;
+      modalConfirm.show();
+    }
+
+    document.getElementById('btnEjecutarModal').addEventListener('click', function() {
+      modalConfirm.hide();
+      ejecutarPlaybook(playbookSeleccionado, nombreTareaSeleccionada);
+    });
+
+    function ejecutarPlaybook(playbook, nombreAmigable) {
+      const consoleOutput = document.getElementById('consoleOutput');
+      const badge = document.getElementById('statusBadge');
+      const summaryCard = document.getElementById('summaryCard');
+      const summaryTitle = document.getElementById('summaryTitle');
+      const summaryContent = document.getElementById('summaryContent');
+
+      summaryCard.className = 'card shadow-sm mb-3 summary-card warning';
+      badge.className = 'badge bg-warning text-dark';
+      badge.innerText = 'Ejecutando...';
+      summaryTitle.innerText = `⏳ Ejecutando: ${nombreAmigable}`;
+      summaryContent.innerHTML = `<p class="mb-0">Procesando solicitud en el servidor. Por favor espera...</p>`;
+      
+      consoleOutput.innerText = `[LOG] Ejecutando: ${playbook}...\n`;
+
+      fetch('/run-playbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playbook: playbook })
+      })
+      .then(response => response.json())
+      .then(data => {
+        consoleOutput.innerText = data.output;
+
+        if (data.status === 'success') {
+          summaryCard.className = 'card shadow-sm mb-3 summary-card success';
+          badge.className = 'badge bg-success';
+          badge.innerText = 'Éxito';
+          summaryTitle.innerText = `✅ Tarea Completada: ${nombreAmigable}`;
+
+          renderizarResumenAmigable(data.output, summaryContent);
+
+        } else {
+          summaryCard.className = 'card shadow-sm mb-3 summary-card danger';
+          badge.className = 'badge bg-danger';
+          badge.innerText = 'Fallo';
+          summaryTitle.innerText = `🚨 Ocurrió un Problema en: ${nombreAmigable}`;
+          summaryContent.innerHTML = `<div class="alert alert-danger mb-0 p-2">Error al ejecutar la tarea. Consulta la consola negra abajo.</div>`;
+        }
+      })
+      .catch(error => {
+        summaryCard.className = 'card shadow-sm mb-3 summary-card danger';
+        badge.className = 'badge bg-danger';
+        badge.innerText = 'Error de Red';
+        summaryTitle.innerText = `🚨 Error de Conexión`;
+        summaryContent.innerHTML = `<div class="alert alert-danger mb-0 p-2">No se pudo contactar con la aplicación Flask: ${error}</div>`;
+        consoleOutput.innerText = `🚨 Error de red: ${error}`;
+      });
+    }
+
+    function renderizarResumenAmigable(rawOutput, container) {
+      let lines = [];
+      try {
+        const matches = rawOutput.match(/"msg":\s*\[([\s\S]*?)\]/);
+        if (matches && matches[1]) {
+          lines = matches[1]
+            .split('\n')
+            .map(l => l.trim())
+            .map(l => l.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/,/g, ''))
+            .filter(l => l.length > 0 && l !== '[' && l !== ']');
+        }
+      } catch (e) {
+        lines = [];
+      }
+
+      if (lines.length > 0) {
+        let html = '<div class="row g-2">';
+        lines.forEach(line => {
+          if (line.includes('===') || line.includes('---')) return;
+
+          // Dividir líneas con saltos explícitos \n para mostrar en cascada
+          let sublines = line.split('\\n');
+          
+          sublines.forEach(sub => {
+            let cleanLine = sub.replace(/["'\[\]]/g, '').trim();
+            if (cleanLine.length > 0) {
+              html += `<div class="col-12"><div class="result-item">${cleanLine}</div></div>`;
+            }
+          });
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      } else {
+        container.innerHTML = `<div class="alert alert-success mb-0 p-2">La tarea finalizó correctamente en el servidor.</div>`;
+      }
+    }
+  </script>
 </body>
 </html>

@@ -1,33 +1,38 @@
-import os
+from flask import Flask, render_template, request, jsonify
 import subprocess
-from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INVENTARIO = os.path.join(os.path.dirname(BASE_DIR), "inventory.ini")
-PLAYBOOKS_DIR = os.path.join(BASE_DIR, "playbooks")
-
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    output = ""
-    playbook_seleccionado = ""
+    return render_template('index.html')
+
+@app.route('/run-playbook', methods=['POST'])
+def run_playbook():
+    data = request.get_json()
+    playbook = data.get('playbook')
+
+    # Validar que el playbook sea uno de los permitidos por seguridad
+    playbooks_permitidos = [
+        'conexion.yml',
+        'diagnostico.yml',
+        'backup.yml',
+        'auditoria_forense.yml'
+    ]
+
+    if playbook not in playbooks_permitidos:
+        return jsonify({'status': 'error', 'output': 'Playbook no permitido o no encontrado.'}), 400
+
+    cmd = f"ansible-playbook -i /app/inventory.ini /app/app/playbooks/{playbook}"
     
-    if request.method == 'POST':
-        playbook_file = request.form.get('playbook_file', 'ejemplo.yml')
-        playbook_path = os.path.join(PLAYBOOKS_DIR, playbook_file)
-        
-        try:
-            cmd = ["ansible-playbook", "-i", INVENTARIO, playbook_path]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-            output = result.stdout + result.stderr
-            playbook_seleccionado = playbook_file
-        except subprocess.TimeoutExpired:
-            output = "Error: El playbook excedió el tiempo límite de 5 minutos."
-        except Exception as e:
-            output = f"Error: {e}"
-            
-    return render_template('index.html', output=output, playbook_actual=playbook_seleccionado)
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        return jsonify({
+            'status': 'success' if result.returncode == 0 else 'failed',
+            'output': result.stdout if result.stdout else result.stderr
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'output': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
