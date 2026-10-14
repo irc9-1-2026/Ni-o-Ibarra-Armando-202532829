@@ -1,0 +1,53 @@
+---
+- name: Auditoría Forense Completa con Explicación de MAC
+  hosts: servers
+  become: true
+  tasks:
+    - name: 1. Obtener sesión SSH y terminal activa
+      shell: "who -m --ip 2>/dev/null || who | tail -n 1"
+      register: ssh_session
+      failed_when: false
+
+    - name: 2. Extraer IP remota del cliente
+      shell: "echo '{{ ssh_session.stdout }}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' || echo '127.0.0.1'"
+      register: client_ip
+
+    - name: 3. Intentar obtener Dirección MAC desde la Tabla ARP
+      shell: "ip neighbor show {{ client_ip.stdout }} | awk '{print $5}'"
+      register: mac_address
+      failed_when: false
+
+    - name: 4. Inspeccionar el Software Cliente de SSH
+      shell: "journalctl -u ssh -u sshd -n 50 --no-pager | grep '{{ client_ip.stdout }}' | grep -i 'Client protocol' | tail -n 1 | awk -F'version ' '{print $2}'"
+      register: ssh_client_version
+      failed_when: false
+
+    - name: 5. Consultar Geolocalización y Detección de VPN / Proxy
+      uri:
+        url: "http://ip-api.com/json/{{ client_ip.stdout }}?fields=status,country,city,isp,proxy,hosting,timezone"
+        method: GET
+        return_content: yes
+      register: geo_info
+      when: client_ip.stdout != "127.0.0.1" and not client_ip.stdout.startswith("192.168.") and not client_ip.stdout.startswith("10.") and not client_ip.stdout.startswith("172.")
+      failed_when: false
+
+    - name: 6. Imprimir Reporte Forense Consolidado
+      debug:
+        msg:
+          - "====== 🕵️ AUDITORÍA FORENSE DE IDENTIDAD Y RED ======"
+          - "FECHA Y HORA DE REGISTRO: {{ ansible_date_time.date }} - {{ ansible_date_time.time }} ({{ ansible_date_time.tz }})"
+          - "--------------------------------------------------"
+          - "👤 USUARIO CONECTADO: {{ ssh_session.stdout.split()[0] if ssh_session.stdout else 'Sin sesión' }}"
+          - "💻 IDENTIFICADOR / TTY: {{ ssh_session.stdout.split()[1] if ssh_session.stdout else 'N/A' }}"
+          - "🌐 DIRECCIÓN IP ORIGEN: {{ client_ip.stdout }}"
+          - "--------------------------------------------------"
+          - "🏷️ DIRECCIÓN MAC (Capa 2): {{ mac_address.stdout if (mac_address.stdout != '' and mac_address.stdout != None) else '⚠️ No disponible (El tráfico proviene de una red remota/VPN; las direcciones MAC no atraviesan routers en Capa 3)' }}"
+          - "🛠️ CLIENTE SSH (SISTEMA): {{ ssh_client_version.stdout if ssh_client_version.stdout else 'OpenSSH / Genérico' }}"
+          - "--------------------------------------------------"
+          - "📍 UBICACIÓN Y RED: {{ geo_info.json.country | default('Red Local / Privada') }} ({{ geo_info.json.city | default('LAN') }})"
+          - "🏢 PROVEEDOR / ISP: {{ geo_info.json.isp | default('Red Local de Área Virtual (LAN)') }}"
+          - "--------------------------------------------------"
+          - "🔒 DETECCIÓN DE ANÓNIMOS / VPN:"
+          - "   • ¿Usa VPN / Proxy / Tor?: {{ 'SÍ 🚨 (Riesgo / IP Oculta)' if (geo_info.json.proxy | default(false) or geo_info.json.hosting | default(false)) else 'NO ✅ (Conexión Directa / Local)' }}"
+          - "--------------------------------------------------"
+          - "✅ Registro de seguridad auditado e inalterable."

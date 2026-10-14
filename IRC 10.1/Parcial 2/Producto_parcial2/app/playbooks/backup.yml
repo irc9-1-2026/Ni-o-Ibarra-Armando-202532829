@@ -1,0 +1,28 @@
+---
+- name: Respaldo de Seguridad Express
+  hosts: servers
+  become: true
+  tasks:
+    - name: Crear directorio para respaldos
+      file:
+        path: /var/backups/ansible_express
+        state: directory
+        mode: '0755'
+
+    - name: Comprimir configuraciones y logs en Rocky Linux
+      archive:
+        path:
+          - /etc/hosts
+          - /etc/resolv.conf
+          - /var/log/messages  # En Rocky Linux el log del sistema suele ser messages en vez de syslog
+        dest: "/var/backups/ansible_express/backup_{{ ansible_date_time.date }}_{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}.tar.gz"
+        format: gz
+        ignore_missing: yes
+      register: backup_result
+
+    - name: Confirmar estado del respaldo
+      debug:
+        msg:
+          - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (ROCKY LINUX) ======"
+          - "Ruta de archivo comprimido: {{ backup_result.dest }}"
+          - "Estado: Archivo generado correctamente en la VM."

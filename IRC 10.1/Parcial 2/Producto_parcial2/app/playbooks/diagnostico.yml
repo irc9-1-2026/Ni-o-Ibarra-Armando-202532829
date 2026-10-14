@@ -1,0 +1,21 @@
+---
+- name: Diagnóstico de Salud y Rendimiento del Sistema
+  hosts: servers
+  gather_facts: true
+  tasks:
+    - name: Obtener top 5 procesos por uso de recursos
+      command: ps aux --sort=-%cpu
+      register: top_processes
+
+    - name: Desplegar Reporte de Salud
+      debug:
+        msg:
+          - "====== 📊 REPORTE DE SALUD DEL SERVIDOR ======"
+          - "Sistema Operativo: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Kernel: {{ ansible_kernel }}"
+          - "Uptime: {{ ansible_uptime_seconds // 3600 }} horas, {{ (ansible_uptime_seconds % 3600) // 60 }} mins"
+          - "Memoria RAM: {{ ansible_memtotal_mb - ansible_memfree_mb }} MB usados / {{ ansible_memtotal_mb }} MB totales"
+          - "Espacio libre en Disco (/): {{ (ansible_mounts[0].size_available / 1024 / 1024 / 1024) | round(2) }} GB de {{ (ansible_mounts[0].size_total / 1024 / 1024 / 1024) | round(2) }} GB"
+          - "--------------------------------------------------"
+          - "TOP PROCESOS POR CPU:"
+          - "{{ top_processes.stdout_lines[:6] }}"

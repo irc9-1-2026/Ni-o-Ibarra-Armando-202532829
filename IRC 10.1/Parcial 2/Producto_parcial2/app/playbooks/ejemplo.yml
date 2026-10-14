@@ -1,0 +1,8 @@
+---
+- name: Playbook de Ejemplo (Smoke Test)
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Mostrar mensaje
+      debug:
+        msg: "¡Hola desde Ansible!"

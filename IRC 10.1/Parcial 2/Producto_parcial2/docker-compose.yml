@@ -1,0 +1,13 @@
+services:
+  flask-ansible:
+    build: .
+    container_name: flask_ansible_ui
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app/playbooks:/app/app/playbooks
+      - ./inventory.ini:/app/inventory.ini:ro
+      - ./keys:/keys:ro
+    environment:
+      - ANSIBLE_HOST_KEY_CHECKING=False
+      - PYTHONUNBUFFERED=1
