@@ -11,8 +11,8 @@ def index():
 def run_playbook():
     data = request.get_json()
     playbook = data.get('playbook')
+    target_host = data.get('target_host', 'AnsibleRocky')
 
-    # Validar que el playbook sea uno de los permitidos por seguridad
     playbooks_permitidos = [
         'conexion.yml',
         'diagnostico.yml',
@@ -21,9 +21,10 @@ def run_playbook():
     ]
 
     if playbook not in playbooks_permitidos:
-        return jsonify({'status': 'error', 'output': 'Playbook no permitido o no encontrado.'}), 400
+        return jsonify({'status': 'error', 'output': 'Playbook no permitido.'}), 400
 
-    cmd = f"ansible-playbook -i /app/inventory.ini /app/app/playbooks/{playbook}"
+    # Pasa el target_host a Ansible mediante --limit y la variable target_host
+    cmd = f"ansible-playbook -i /app/inventory.ini /app/app/playbooks/{playbook} --limit {target_host} -e 'target_host={target_host}'"
     
     try:
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)

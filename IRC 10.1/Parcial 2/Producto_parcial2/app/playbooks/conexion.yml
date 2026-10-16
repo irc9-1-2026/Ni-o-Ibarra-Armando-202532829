@@ -1,8 +1,21 @@
 ---
-- name: conexion.yml
-  hosts: all
+- name: Prueba de Conexión Multiplataforma
+  hosts: "{{ target_host | default('all') }}"
   gather_facts: false
   tasks:
-    - name: Mostrar mensaje
+    - name: 1. Prueba de Ping en Linux
+      ping:
+      when: ansible_connection != 'winrm'
+      register: ping_linux
+
+    - name: 2. Prueba de Ping en Windows Server
+      ansible.windows.win_ping:
+      when: ansible_connection == 'winrm'
+      register: ping_win
+
+    - name: 3. Confirmación de respuesta
       debug:
-        msg: "¡Hola desde Ansible!"
+        msg:
+          - "======  CONEXIÓN ESTABLECIDA EXITOSAMENTE ======"
+          - "Servidor consultado: {{ inventory_hostname }}"
+          - "Estado de respuesta: ONLINE (Respuesta de sistema OK)"

@@ -1,38 +1,38 @@
 ---
-- name: Diagnóstico de Salud del Sistema
-  hosts: servers
-  become: true
+- name: Diagnóstico de Salud del Sistema (Linux y Windows)
+  hosts: "{{ target_host | default('all') }}"
   gather_facts: false
   tasks:
-    - name: 1. Consultar uso de Memoria RAM
-      shell: "free -m | awk 'NR==2{printf \"RAM en uso: %s MB de %s MB (%.2f%%)\", $3, $2, $3*100/$2 }'"
-      register: memory_usage
+    # SECCIÓN LINUX
+    - name: Diagnóstico Memoria y Disco en Linux
+      when: ansible_connection != 'winrm'
+      block:
+        - shell: "free -m | awk 'NR==2{printf \"RAM en uso: %s MB de %s MB (%.2f%%)\", $3, $2, $3*100/$2 }'"
+          register: memory_linux
+        - shell: "df -h / | awk 'NR==2{print \"Almacenamiento libre: \" $4 \" disponible de \" $2 \" (\" $5 \" usado)\"}'"
+          register: disk_linux
+        - debug:
+            msg:
+              - "====== 🩺 REPORTE DE SALUD (LINUX) ======"
+              - "• {{ memory_linux.stdout }}"
+              - "• {{ disk_linux.stdout }}"
 
-    - name: 2. Consultar espacio en Disco
-      shell: "df -h / | awk 'NR==2{print \"Almacenamiento libre: \" $4 \" disponible de \" $2 \" (\" $5 \" usado)\"}'"
-      register: disk_usage
-
-    - name: 3. Obtener procesos con mayor consumo de CPU en formato amigable
-      shell: >
-        ps -eo %cpu,args --sort=-%cpu | head -n 4 | tail -n 3 | awk '{
-          cmd=$2; 
-          for(i=3;i<=NF;i++) cmd=cmd" "$i; 
-          sub(".*/", "", cmd); 
-          print "• Proceso: " substr(cmd, 1, 40) " — Uso CPU: " $1 "%"
-        }'
-      register: top_cpu
-
-    - name: 4. Mostrar reporte de diagnóstico amigable
-      debug:
-        msg:
-          - "====== 🩺 REPORTE DE SALUD DEL SERVIDOR ======"
-          - "📊 ESTADO DE MEMORIA:"
-          - "• {{ memory_usage.stdout }}"
-          - "--------------------------------------------------"
-          - "💾 ESTADO DEL DISCO:"
-          - "• {{ disk_usage.stdout }}"
-          - "--------------------------------------------------"
-          - "⚡ PROCESOS CON MAYOR CONSUMO DE CPU:"
-          - "{{ top_cpu.stdout_lines }}"
-          - "--------------------------------------------------"
-          - "✅ Diagnóstico finalizado sin anomalías críticas."
+    # SECCIÓN WINDOWS SERVER
+    - name: Diagnóstico Memoria y Disco en Windows Server
+      when: ansible_connection == 'winrm'
+      block:
+        - ansible.windows.win_powershell:
+            script: |
+              $ram = Get-CimInstance Win32_OperatingSystem
+              "RAM en uso: $([math]::Round(($ram.TotalVisibleMemorySize - $ram.FreePhysicalMemory)/1024)) MB de $([math]::Round($ram.TotalVisibleMemorySize/1024)) MB"
+          register: memory_win
+        - ansible.windows.win_powershell:
+            script: |
+              $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
+              "Almacenamiento libre C: $([math]::Round($disk.FreeSpace/1GB, 2)) GB disponible de $([math]::Round($disk.Size/1GB, 2)) GB"
+          register: disk_win
+        - debug:
+            msg:
+              - "====== 🩺 REPORTE DE SALUD (WINDOWS SERVER 2022) ======"
+              - "• {{ memory_win.output[0] }}"
+              - "• {{ disk_win.output[0] }}"

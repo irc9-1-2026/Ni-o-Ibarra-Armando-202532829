@@ -1,33 +1,71 @@
 ---
-- name: Respaldo de Seguridad Express
-  hosts: servers
-  become: true
+- name: Respaldo de Seguridad Express Multiplataforma
+  hosts: "{{ target_host | default('all') }}"
   gather_facts: false
   tasks:
-    - name: 1. Crear directorio para respaldos si no existe
-      file:
-        path: /var/backups/ansible_express
-        state: directory
-        mode: '0755'
+    # ----------------------------------------------------
+    # SECCIÓN LINUX (Rocky, Kali, etc.)
+    # ----------------------------------------------------
+    - name: Tareas de Respaldo para Linux
+      when: ansible_connection != 'winrm'
+      block:
+        - name: 1. Crear directorio para respaldos si no existe
+          file:
+            path: /var/backups/ansible_express
+            state: directory
+            mode: '0755'
 
-    - name: 2. Limpiar todos los respaldos y archivos anteriores
-      shell: "rm -rf /var/backups/ansible_express/*"
+        - name: 2. Limpiar respaldos anteriores
+          shell: "rm -rf /var/backups/ansible_express/*"
 
-    - name: 3. Obtener fecha y hora actual
-      command: date "+%Y-%m-%d_%H-%M-%S"
-      register: timestamp
+        - name: 3. Obtener timestamp
+          command: date "+%Y-%m-%d_%H-%M-%S"
+          register: timestamp_linux
 
-    - name: 4. Generar nuevo archivo comprimido con timestamp
-      shell: >
-        tar -czf /var/backups/ansible_express/backup_rocky_{{ timestamp.stdout }}.tar.gz
-        /etc/hosts
-        /etc/resolv.conf
-        /var/log/dnf.log
+        - name: 4. Generar paquete comprimido .tar.gz
+          shell: >
+            tar -czf /var/backups/ansible_express/backup_rocky_{{ timestamp_linux.stdout }}.tar.gz
+            /etc/hosts
+            /etc/resolv.conf
+            /var/log/dnf.log
 
-    - name: 5. Confirmar estado del respaldo
-      debug:
-        msg:
-          - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (ROCKY LINUX) ======"
-          - "Archivo generado: /var/backups/ansible_express/backup_rocky_{{ timestamp.stdout }}.tar.gz"
-          - "FECHA Y HORA REGISTRADA: {{ timestamp.stdout }}"
-          - "Estado: Se limpio el directorio y se genero el nuevo respaldo con fecha en el nombre."
+        - name: 5. Confirmar respaldo Linux
+          debug:
+            msg:
+              - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (LINUX) ======"
+              - "Servidor: {{ inventory_hostname }}"
+              - "Archivo generado: /var/backups/ansible_express/backup_rocky_{{ timestamp_linux.stdout }}.tar.gz"
+              - "FECHA Y HORA REGISTRADA: {{ timestamp_linux.stdout }}"
+
+    # ----------------------------------------------------
+    # SECCIÓN WINDOWS SERVER 2022
+    # ----------------------------------------------------
+    - name: Tareas de Respaldo para Windows Server
+      when: ansible_connection == 'winrm'
+      block:
+        - name: 1. Crear directorio C:\Backups\AnsibleExpress y comprimir logs/configuraciones
+          ansible.windows.win_powershell:
+            script: |
+              $backupDir = "C:\Backups\AnsibleExpress"
+              if (-not (Test-Path $backupDir)) { New-Item -Path $backupDir -ItemType Directory | Out-Null }
+              Remove-Item -Path "$backupDir\*" -Recurse -Force -ErrorAction SilentlyContinue
+
+              $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+              $zipFile = "$backupDir\backup_win_$timestamp.zip"
+
+              $filesToBackup = @(
+                "$env:SystemRoot\System32\drivers\etc\hosts",
+                "$env:SystemRoot\win.ini"
+              )
+
+              Compress-Archive -Path $filesToBackup -DestinationPath $zipFile -Force
+              "$zipFile|$timestamp"
+          register: backup_win_res
+
+        - name: 2. Confirmar respaldo Windows
+          debug:
+            msg:
+              - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (WINDOWS SERVER 2022) ======"
+              - "Servidor: {{ inventory_hostname }}"
+              - "Ruta de archivo: C:\\Backups\\AnsibleExpress"
+              - "Estado: Archivo ZIP de seguridad generado con éxito."

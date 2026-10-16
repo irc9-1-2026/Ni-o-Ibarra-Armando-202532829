@@ -50,6 +50,14 @@
       border: 1px solid #e9ecef;
       color: #212529;
     }
+
+    /* Selector de Servidores Proxmox */
+    .server-selector {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 15px 20px;
+      border: 1px solid #e3e6f0;
+    }
   </style>
 </head>
 <body>
@@ -57,8 +65,30 @@
   <div class="container py-4">
     <!-- Encabezado -->
     <div class="text-center mb-4">
-      <h2 class="fw-bold text-dark">🚀 Panel de Operaciones del Servidor</h2>
-      <p class="text-muted small">Ejecuta tareas automatizadas en Rocky Linux de forma rápida y sencilla.</p>
+      <h2 class="fw-bold text-dark">🚀 Panel de Operaciones Multi-Servidor (Proxmox)</h2>
+      <p class="text-muted small">Selecciona una máquina virtual de tu clúster y ejecuta acciones automatizadas.</p>
+    </div>
+
+    <!-- SELECTOR DE SERVIDOR PROXMOX / TAILSCALE -->
+    <div class="server-selector shadow-sm mb-4">
+      <div class="row align-items-center">
+        <div class="col-md-4">
+          <label for="targetHostSelect" class="form-label fw-bold mb-0">🖥️ Seleccionar Servidor Objetivo (VM):</label>
+        </div>
+        <div class="col-md-8">
+          <select class="form-select form-select-lg border-primary fw-semibold" id="targetHostSelect">
+            <option value="AnsibleRocky" selected>101 - AnsibleRocky (Servidor Principal)</option>
+            <option value="Rocky1">102 - Rocky1 (Nodo 1)</option>
+            <option value="Rocky2">103 - Rocky2 (Nodo 2)</option>
+            <option value="Rocky3">104 - Rocky3 (Nodo 3)</option>
+            <option value="Rocky4">105 - Rocky4 (Nodo 4)</option>
+            <option value="windows">106 - Windows Server 2022 (WinRM)</option>
+            <option value="Kali">100 - Kali (Seguridad/Auditoría)</option>
+            <option value="Kali-Errol">107 - Kali-Errol (Auditoría Avanzada)</option>
+            <option value="linux_vms">🌐 TODAS LAS MÁQUINAS LINUX (Ejecución Simultánea)</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Tarjetas de Acciones Rápida -->
@@ -130,7 +160,7 @@
           <span id="statusBadge" class="badge bg-secondary">Sin ejecuciones en curso</span>
         </div>
         <div id="summaryContent" class="text-muted small">
-          Presiona cualquiera de los botones de arriba para ver los resultados explicados de forma clara.
+          Selecciona una máquina arriba y presiona cualquiera de los botones para ver el resultado.
         </div>
       </div>
     </div>
@@ -184,17 +214,22 @@
     function confirmarAccion(playbookFile, nombreAmigable) {
       playbookSeleccionado = playbookFile;
       nombreTareaSeleccionada = nombreAmigable;
+      
+      const hostSelect = document.getElementById('targetHostSelect');
+      const hostTexto = hostSelect.options[hostSelect.selectedIndex].text;
+
       document.getElementById('modalTitle').innerText = `Confirmación: ${nombreAmigable}`;
-      document.getElementById('modalBody').innerText = `Vas a ejecutar la tarea "${nombreAmigable}" en el servidor Rocky Linux. ¿Deseas continuar?`;
+      document.getElementById('modalBody').innerHTML = `Vas a ejecutar la tarea <strong>"${nombreAmigable}"</strong> en el servidor:<br><span class="badge bg-primary mt-2">${hostTexto}</span><br><br>¿Deseas continuar?`;
       modalConfirm.show();
     }
 
     document.getElementById('btnEjecutarModal').addEventListener('click', function() {
       modalConfirm.hide();
-      ejecutarPlaybook(playbookSeleccionado, nombreTareaSeleccionada);
+      const targetHost = document.getElementById('targetHostSelect').value;
+      ejecutarPlaybook(playbookSeleccionado, nombreTareaSeleccionada, targetHost);
     });
 
-    function ejecutarPlaybook(playbook, nombreAmigable) {
+    function ejecutarPlaybook(playbook, nombreAmigable, targetHost) {
       const consoleOutput = document.getElementById('consoleOutput');
       const badge = document.getElementById('statusBadge');
       const summaryCard = document.getElementById('summaryCard');
@@ -204,15 +239,18 @@
       summaryCard.className = 'card shadow-sm mb-3 summary-card warning';
       badge.className = 'badge bg-warning text-dark';
       badge.innerText = 'Ejecutando...';
-      summaryTitle.innerText = `⏳ Ejecutando: ${nombreAmigable}`;
-      summaryContent.innerHTML = `<p class="mb-0">Procesando solicitud en el servidor. Por favor espera...</p>`;
+      summaryTitle.innerText = `⏳ Ejecutando: ${nombreAmigable} [${targetHost}]`;
+      summaryContent.innerHTML = `<p class="mb-0">Procesando solicitud en el servidor <strong>${targetHost}</strong>. Por favor espera...</p>`;
       
-      consoleOutput.innerText = `[LOG] Ejecutando: ${playbook}...\n`;
+      consoleOutput.innerText = `[LOG] Ejecutando playbook ${playbook} en ${targetHost}...\n`;
 
       fetch('/run-playbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playbook: playbook })
+        body: JSON.stringify({ 
+          playbook: playbook,
+          target_host: targetHost 
+        })
       })
       .then(response => response.json())
       .then(data => {
@@ -222,7 +260,7 @@
           summaryCard.className = 'card shadow-sm mb-3 summary-card success';
           badge.className = 'badge bg-success';
           badge.innerText = 'Éxito';
-          summaryTitle.innerText = `✅ Tarea Completada: ${nombreAmigable}`;
+          summaryTitle.innerText = `✅ Tarea Completada en ${targetHost}: ${nombreAmigable}`;
 
           renderizarResumenAmigable(data.output, summaryContent);
 
@@ -230,7 +268,7 @@
           summaryCard.className = 'card shadow-sm mb-3 summary-card danger';
           badge.className = 'badge bg-danger';
           badge.innerText = 'Fallo';
-          summaryTitle.innerText = `🚨 Ocurrió un Problema en: ${nombreAmigable}`;
+          summaryTitle.innerText = `🚨 Ocurrió un Problema en ${targetHost}: ${nombreAmigable}`;
           summaryContent.innerHTML = `<div class="alert alert-danger mb-0 p-2">Error al ejecutar la tarea. Consulta la consola negra abajo.</div>`;
         }
       })
@@ -264,7 +302,6 @@
         lines.forEach(line => {
           if (line.includes('===') || line.includes('---')) return;
 
-          // Dividir líneas con saltos explícitos \n para mostrar en cascada
           let sublines = line.split('\\n');
           
           sublines.forEach(sub => {
