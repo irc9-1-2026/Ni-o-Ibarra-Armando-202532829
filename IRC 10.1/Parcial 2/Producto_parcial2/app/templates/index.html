@@ -1,321 +1,1514 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal DevOps - Control Automático</title>
-  <!-- Bootstrap 5 CDN -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>IT Operations & ITSM Dashboard</title>
+
+  <!-- Bootstrap 5.3 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    .card-action {
-      transition: transform 0.2s, box-shadow 0.2s;
+    :root {
+      --bg-main: #04164f;
+      --bg-main-2: #020b30;
+      --bg-soft: rgba(255, 255, 255, 0.04);
+      --bg-soft-hover: rgba(255, 255, 255, 0.08);
+      --bg-inset: #051a56;
+      --bg-deep: #031040;
+      --bg-bar: #061c5e;
+      --sky: #38bdf8;
+      --sky-hover: #7dd3fc;
+      --sky-ink: #032046;
+      --accent-red: #e11d2e;
+      --line-blue: #1d3fa8;
+      --border-color: rgba(110, 150, 240, 0.28);
+      --text-muted: #a9b9e6;
+      --text-main: #ffffff;
+      --estado-ok: #34d399;
+      --estado-warn: #ffd23f;
+      --estado-err: #ff4d5a;
+    }
+
+    body {
+      background: linear-gradient(180deg, var(--bg-main), var(--bg-main-2)) fixed;
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .text-muted { color: var(--text-muted) !important; }
+    .text-primary { color: var(--sky) !important; }
+
+    /* ===== Colores de estado en las letras ===== */
+    .text-ok   { color: var(--estado-ok) !important; }
+    .text-warn { color: var(--estado-warn) !important; }
+    .text-err  { color: var(--estado-err) !important; }
+
+    /* ===== Botones: azul cielo ===== */
+    .btn-primary, .btn-success, .btn-info {
+      --bs-btn-color: var(--sky-ink);
+      --bs-btn-bg: var(--sky);
+      --bs-btn-border-color: var(--sky);
+      --bs-btn-hover-color: var(--sky-ink);
+      --bs-btn-hover-bg: var(--sky-hover);
+      --bs-btn-hover-border-color: var(--sky-hover);
+      --bs-btn-active-color: var(--sky-ink);
+      --bs-btn-active-bg: var(--sky-hover);
+      --bs-btn-active-border-color: var(--sky-hover);
+      font-weight: 600;
+    }
+    .btn-warning {
+      --bs-btn-color: var(--bg-main-2);
+      --bs-btn-bg: #ffffff;
+      --bs-btn-border-color: #ffffff;
+      --bs-btn-hover-color: var(--bg-main-2);
+      --bs-btn-hover-bg: #dbe7ff;
+      --bs-btn-hover-border-color: #dbe7ff;
+      --bs-btn-active-color: var(--bg-main-2);
+      --bs-btn-active-bg: #dbe7ff;
+    }
+    .btn-outline-info, .btn-outline-success, .btn-outline-secondary {
+      --bs-btn-color: var(--sky);
+      --bs-btn-border-color: var(--sky);
+      --bs-btn-hover-color: var(--sky-ink);
+      --bs-btn-hover-bg: var(--sky);
+      --bs-btn-hover-border-color: var(--sky);
+      --bs-btn-active-color: var(--sky-ink);
+      --bs-btn-active-bg: var(--sky-hover);
+      --bs-btn-active-border-color: var(--sky-hover);
+    }
+    .btn-outline-danger {
+      --bs-btn-color: #ff7a84;
+      --bs-btn-border-color: #ff7a84;
+      --bs-btn-hover-color: #ffffff;
+      --bs-btn-hover-bg: var(--accent-red);
+      --bs-btn-hover-border-color: var(--accent-red);
+      --bs-btn-active-bg: var(--accent-red);
+    }
+
+    /* ===== Barra lateral ===== */
+    .sidebar {
+      width: 240px;
+      background-color: var(--bg-bar);
+      border-right: 1px solid var(--line-blue);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .sidebar-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar .nav-link-custom {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      color: var(--text-muted);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .sidebar .nav-link-custom:hover {
+      background: var(--bg-soft-hover);
+      color: #ffffff;
+    }
+
+    .sidebar .nav-link-custom.active {
+      background: var(--sky);
+      color: var(--sky-ink);
+      font-weight: 700;
+    }
+
+    .sidebar .nav-link-custom i { font-size: 1.2rem; }
+
+    .main-wrapper {
+      margin-left: 240px;
+      flex: 1;
+      padding: 24px 40px;
+      min-width: 0;
+    }
+
+    /* ===== Encabezado: la única línea roja ===== */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0 18px;
+      margin-bottom: 28px;
+      border-bottom: 3px solid var(--accent-red);
+    }
+
+    .node-select-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--line-blue);
+      color: #ffffff;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+    }
+    .node-select-box:focus {
+      background: var(--bg-inset);
+      color: #ffffff;
+      border-color: var(--sky);
+      box-shadow: 0 0 0 .2rem rgba(56, 189, 248, 0.25);
+    }
+    .node-select-box::placeholder { color: #8fa3dd; }
+
+    /* ===== Bloques sin caja ===== */
+    .kpi-card {
+      background: transparent;
       border: none;
-      border-radius: 12px;
+      border-left: 1px solid var(--border-color);
+      border-radius: 0;
+      padding: 6px 18px;
+      transition: background 0.2s ease;
     }
-    .card-action:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    .kpi-card:hover { background: var(--bg-soft); }
+
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--sky);
     }
-    .icon-box { font-size: 2.2rem; margin-bottom: 8px; }
-    
-    /* Consola compacta */
-    #consoleOutput {
-      background-color: #1e1e1e;
-      color: #00ff66;
-      font-family: 'Courier New', Courier, monospace;
+
+    .dashboard-panel {
+      background: transparent;
+      border: none;
+      border-top: 1px solid var(--border-color);
+      border-radius: 0;
+      padding: 22px 0 8px;
+      margin-bottom: 28px;
+    }
+
+    .result-badge {
+      background: var(--bg-soft);
+      border: none;
       border-radius: 6px;
-      padding: 12px;
+      padding: 10px 16px;
+      color: #ffffff;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-badge.sub {
+      padding: 4px 16px 4px 32px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      background: transparent;
+    }
+
+    /* Líneas del reporte coloreadas según su estado */
+    .result-badge.ok   { color: var(--estado-ok); }
+    .result-badge.warn { color: var(--estado-warn); }
+    .result-badge.bad  { color: var(--estado-err); }
+
+    /* La consola conserva su fondo oscuro para distinguirse */
+    .terminal-card {
+      background: var(--bg-deep);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .terminal-header {
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .terminal-header .btn { color: #ffffff !important; }
+    .terminal-header .btn:hover { color: var(--sky-ink) !important; }
+
+    #consoleOutput {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      color: #8fe0ff;
+      background: var(--bg-deep);
+      padding: 16px;
       font-size: 0.85rem;
-      max-height: 180px;
+      max-height: 240px;
       overflow-y: auto;
       white-space: pre-wrap;
+      margin: 0;
     }
 
-    /* Tarjeta de Resumen Visual Dinámico */
-    .summary-card {
-      border-left: 6px solid #6c757d;
+    .loader-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+    }
+
+    .pulse-spinner {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid rgba(56, 189, 248, 0.25);
+      border-top-color: var(--sky);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .modal-content {
+      background-color: #08256f;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+
+    /* ===== Tablero: columnas planas, tickets separados por líneas finas ===== */
+    .board-col {
+      background: var(--bg-soft);
+      border: none;
       border-radius: 10px;
+      padding: 14px 16px;
+      height: 100%;
+      min-height: 180px;
     }
-    .summary-card.success { border-left-color: #198754; }
-    .summary-card.danger { border-left-color: #dc3545; }
-    .summary-card.warning { border-left-color: #ffc107; }
 
-    .result-item {
-      background: #ffffff;
+    .board-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--col-color, #64748b);
+    }
+
+    .board-col-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--col-color, #ffffff);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .board-count {
+      background: var(--col-color, #64748b);
+      color: #031040;
+      font-weight: 700;
+      font-size: 0.8rem;
+      border-radius: 20px;
+      padding: 1px 10px;
+    }
+
+    .board-type-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 16px 0 4px;
+    }
+
+    .ticket-card {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      border-radius: 0;
+      padding: 10px 2px;
+      margin: 0;
+      font-size: 0.85rem;
+    }
+    .ticket-card:last-child { border-bottom: none; }
+    .ticket-card:hover { background: var(--bg-soft); }
+
+    .ticket-meta { color: var(--text-muted); font-size: 0.78rem; }
+
+    .ticket-id {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .ticket-id:hover { color: var(--sky); }
+
+    .board-empty {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      padding: 24px 0;
+    }
+
+    /* ===== Telemetría ===== */
+    .metric-label { color: var(--text-muted); font-size: 0.8rem; }
+    .metric-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; margin-top: 6px; }
+    .metric-sub   { color: var(--text-muted); font-size: 0.72rem; margin-top: 4px; min-height: 1em; }
+
+    .chart-box { position: relative; height: 280px; }
+    .chart-box.corta { height: 230px; }
+
+    .tipo-top {
+      background: rgba(255, 210, 63, 0.10);
       border-radius: 6px;
       padding: 10px 14px;
-      margin-bottom: 6px;
-      font-weight: 500;
-      border: 1px solid #e9ecef;
-      color: #212529;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
     }
 
-    /* Selector de Servidores Proxmox */
-    .server-selector {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 15px 20px;
-      border: 1px solid #e3e6f0;
+    .live-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--estado-ok);
+      margin-right: 6px;
+      animation: pulso 1.6s ease-in-out infinite;
     }
+
+    .live-dot.off { background: var(--estado-err); animation: none; }
+
+    @keyframes pulso {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    .tabla-metricas { width: 100%; font-size: 0.86rem; }
+    .tabla-metricas th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 6px; border-bottom: 2px solid var(--line-blue); }
+    .tabla-metricas td { padding: 10px 6px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    .tabla-metricas tr:last-child td { border-bottom: none; }
+    .punto-prio { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+
+    /* ===== Gestión de usuarios ===== */
+    .select-puesto { min-width: 130px; padding: 4px 10px; font-size: 0.82rem; }
+    .tabla-scroll { overflow-x: auto; }
   </style>
 </head>
 <body>
 
-  <div class="container py-4">
-    <!-- Encabezado -->
-    <div class="text-center mb-4">
-      <h2 class="fw-bold text-dark">🚀 Panel de Operaciones Multi-Servidor (Proxmox)</h2>
-      <p class="text-muted small">Selecciona una máquina virtual de tu clúster y ejecuta acciones automatizadas.</p>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <i class="bi bi-cpu-fill" style="color: var(--sky);"></i>
+      <span>Panel Administrativo</span>
     </div>
 
-    <!-- SELECTOR DE SERVIDOR PROXMOX / TAILSCALE -->
-    <div class="server-selector shadow-sm mb-4">
-      <div class="row align-items-center">
-        <div class="col-md-4">
-          <label for="targetHostSelect" class="form-label fw-bold mb-0">🖥️ Seleccionar Servidor Objetivo (VM):</label>
-        </div>
-        <div class="col-md-8">
-          <select class="form-select form-select-lg border-primary fw-semibold" id="targetHostSelect">
-            <option value="AnsibleRocky" selected>101 - AnsibleRocky (Servidor Principal)</option>
-            <option value="Rocky1">102 - Rocky1 (Nodo 1)</option>
-            <option value="Rocky2">103 - Rocky2 (Nodo 2)</option>
-            <option value="Rocky3">104 - Rocky3 (Nodo 3)</option>
-            <option value="Rocky4">105 - Rocky4 (Nodo 4)</option>
-            <option value="windows">106 - Windows Server 2022 (WinRM)</option>
-            <option value="Kali">100 - Kali (Seguridad/Auditoría)</option>
-            <option value="Kali-Errol">107 - Kali-Errol (Auditoría Avanzada)</option>
-            <option value="linux_vms">🌐 TODAS LAS MÁQUINAS LINUX (Ejecución Simultánea)</option>
-          </select>
-        </div>
+    <nav class="nav flex-column w-100">
+      <a class="nav-link-custom active" id="btn-sec-audit" onclick="cambiarSeccion('sec-audit')">
+        <i class="bi bi-hdd-network"></i>
+        <span>1. Funcionamiento del Portal</span>
+      </a>
+      <a class="nav-link-custom" id="btn-sec-admin" onclick="cambiarSeccion('sec-admin')">
+        <i class="bi bi-ticket-perforated"></i>
+        <span>2. Gestión de Tickets</span>
+      </a>
+      <a class="nav-link-custom" id="btn-sec-users" onclick="cambiarSeccion('sec-users')">
+        <i class="bi bi-people"></i>
+        <span>3. Gestión de Usuarios</span>
+      </a>
+      <a class="nav-link-custom" id="btn-sec-metrics" onclick="cambiarSeccion('sec-metrics')">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>4. Estadisticas en tiempo real</span>
+      </a>
+    </nav>
+
+    <form method="post" action="/logout" class="mt-auto">
+      <div class="small text-muted mb-2"><i class="bi bi-person-circle me-1"></i>Sesión: administrador</div>
+      <button type="submit" class="btn btn-outline-info btn-sm w-100">
+        <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
+      </button>
+    </form>
+  </aside>
+
+  <main class="main-wrapper">
+
+    <header class="topbar">
+      <div>
+        <h4 class="fw-bold mb-1" id="sectionTitle">1.Funcionamiento del Portal</h4>
       </div>
+    </header>
+
+    <!-- SECCIÓN 1: Salud del Portal -->
+    <div id="sec-audit" class="seccion-contenido">
+      <section class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="kpi-card d-flex flex-column h-100 justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="kpi-icon"><i class="bi bi-wifi"></i></span>
+                <span class="badge bg-secondary bg-opacity-25 text-white border border-light border-opacity-25">Red</span>
+              </div>
+              <h6 class="fw-bold mb-1">Prueba de Conexión</h6>
+              <p class="text-muted small mb-3">Verifica la conexión SSH a Rocky2 y el estado de los servicios del portal.</p>
+            </div>
+            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('conexion.yml', 'Prueba de Conexión')">
+              Ejecutar Prueba
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="kpi-card d-flex flex-column h-100 justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="kpi-icon"><i class="bi bi-cpu"></i></span>
+                <span class="badge bg-secondary bg-opacity-25 text-white border border-light border-opacity-25">Métricas</span>
+              </div>
+              <h6 class="fw-bold mb-1">Salud del Sistema</h6>
+              <p class="text-muted small mb-3">CPU, RAM y disco de Rocky2, más contenedores, base de datos y portal.</p>
+            </div>
+            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('diagnostico.yml', 'Salud del Sistema')">
+              Analizar Salud
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="kpi-card d-flex flex-column h-100 justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="kpi-icon"><i class="bi bi-shield-check"></i></span>
+                <span class="badge bg-secondary bg-opacity-25 text-white border border-light border-opacity-25">Seguridad</span>
+              </div>
+              <h6 class="fw-bold mb-1">Auditoría de Seguridad</h6>
+              <p class="text-muted small mb-3">Puertos expuestos, accesos SSH con su IP de origen y configuración del servidor.</p>
+            </div>
+            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('auditoria_forense.yml', 'Auditoría de Seguridad')">
+              Iniciar Auditoría
+            </button>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="kpi-card d-flex flex-column h-100 justify-content-between">
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="kpi-icon"><i class="bi bi-box-seam"></i></span>
+                <span class="badge bg-secondary bg-opacity-25 text-white border border-light border-opacity-25">Base de datos</span>
+              </div>
+              <h6 class="fw-bold mb-1">Copia de Seguridad</h6>
+              <p class="text-muted small mb-3">Exporta la base MongoDB (usuarios y tickets) a un archivo comprimido en Rocky2.</p>
+            </div>
+            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('backup.yml', 'Copia de Seguridad')">
+              Crear Respaldo
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <!-- Tarjetas de Acciones Rápida -->
-    <div class="row g-3 mb-4">
-      
-      <!-- Acción 1: Conexión -->
-      <div class="col-md-3">
-        <div class="card h-100 shadow-sm p-2 card-action text-center">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <div>
-              <div class="icon-box">⚡</div>
-              <h6 class="card-title fw-bold">Prueba de Conexión</h6>
-              <p class="card-text text-muted small" style="font-size: 0.8rem;">Verifica la respuesta del servidor.</p>
+    <!-- SECCIÓN 2: GESTIÓN DE TICKETS -->
+    <div id="sec-admin" class="seccion-contenido" style="display: none;">
+      <section class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="kpi-card" style="border-left: none; padding-left: 0;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-ticket-detailed text-primary me-2"></i>Gestión de Tickets</h6>
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-6">
+                <label class="small text-muted mb-1">ID del Ticket:</label>
+                <input type="text" id="ticketIdInput" class="form-control node-select-box w-100" placeholder="ej. 65342a1b9c8d7e6f5a4b3c2d">
+              </div>
+              <div class="col-12 col-md-6 d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-info btn-sm flex-fill" onclick="listarTickets()">
+                  <i class="bi bi-kanban me-1"></i> Listar Tickets
+                </button>
+                <button class="btn btn-success btn-sm flex-fill" onclick="resolverTicket(document.getElementById('ticketIdInput').value)">
+                  <i class="bi bi-check-circle me-1"></i> Resolver Ticket
+                </button>
+              </div>
             </div>
-            <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="confirmarAccion('conexion.yml', 'Prueba de Conexión')">Probar Conexión</button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Acción 2: Salud del Sistema -->
-      <div class="col-md-3">
-        <div class="card h-100 shadow-sm p-2 card-action text-center">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <div>
-              <div class="icon-box">🩺</div>
-              <h6 class="card-title fw-bold">Salud del Sistema</h6>
-              <p class="card-text text-muted small" style="font-size: 0.8rem;">Muestra uso de CPU, RAM y disco.</p>
-            </div>
-            <button class="btn btn-outline-info btn-sm w-100 mt-2" onclick="confirmarAccion('diagnostico.yml', 'Salud del Sistema')">Revisar Salud</button>
-          </div>
+      <!-- Tablero de tickets por prioridad -->
+      <section class="dashboard-panel" id="boardSection">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0"><i class="bi bi-kanban text-primary me-2"></i>Tablero de Tickets Pendientes</h5>
+          <button class="btn btn-outline-secondary btn-sm" onclick="cargarTablero()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+          </button>
         </div>
-      </div>
-
-      <!-- Acción 3: Respaldo -->
-      <div class="col-md-3">
-        <div class="card h-100 shadow-sm p-2 card-action text-center">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <div>
-              <div class="icon-box">📦</div>
-              <h6 class="card-title fw-bold">Copia de Seguridad</h6>
-              <p class="card-text text-muted small" style="font-size: 0.8rem;">Genera un paquete de respaldo comprimido.</p>
-            </div>
-            <button class="btn btn-outline-warning btn-sm w-100 mt-2" onclick="confirmarAccion('backup.yml', 'Copia de Seguridad')">Hacer Backup</button>
-          </div>
+        <div id="boardContainer" class="row g-3">
+          <div class="board-empty w-100">Cargando tickets...</div>
         </div>
-      </div>
-
-      <!-- Acción 4: Auditoría Forense -->
-      <div class="col-md-3">
-        <div class="card h-100 shadow-sm p-2 card-action text-center">
-          <div class="card-body d-flex flex-column justify-content-between">
-            <div>
-              <div class="icon-box">🔍</div>
-              <h6 class="card-title fw-bold">Auditoría de Seguridad</h6>
-              <p class="card-text text-muted small" style="font-size: 0.8rem;">Analiza accesos e intentos SSH.</p>
-            </div>
-            <button class="btn btn-outline-danger btn-sm w-100 mt-2" onclick="confirmarAccion('auditoria_forense.yml', 'Auditoría de Seguridad')">Auditar Ahora</button>
-          </div>
-        </div>
-      </div>
-
+      </section>
     </div>
 
-    <!-- TARJETA DINÁMICA DE RESULTADOS VISUALES -->
-    <div class="card shadow-sm mb-3 summary-card" id="summaryCard">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h5 class="fw-bold mb-0" id="summaryTitle">📋 Resumen de Resultado</h5>
-          <span id="statusBadge" class="badge bg-secondary">Sin ejecuciones en curso</span>
+    <!-- SECCIÓN 3: GESTIÓN DE USUARIOS DEL PORTAL -->
+    <div id="sec-users" class="seccion-contenido" style="display: none;">
+      <section class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="kpi-card" style="border-left: none; padding-left: 0;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person-plus text-primary me-2"></i>Crear usuario</h6>
+            <div class="row g-3 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="small text-muted mb-1">Nombre de usuario:</label>
+                <input type="text" id="nuevoUsuarioNombre" class="form-control node-select-box w-100" placeholder="ej. juan_perez" autocomplete="off" maxlength="30">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="small text-muted mb-1">Contraseña:</label>
+                <input type="password" id="nuevoUsuarioClave" class="form-control node-select-box w-100" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="small text-muted mb-1">Puesto:</label>
+                <select id="nuevoUsuarioPuesto" class="form-select node-select-box w-100">
+                  <option value="Empleado" selected>Empleado</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Gerente">Gerente</option>
+                  <option value="Director">Director</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-3">
+                <button class="btn btn-success w-100" onclick="crearUsuario()">
+                  <i class="bi bi-person-plus me-1"></i> Crear usuario
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="summaryContent" class="text-muted small">
-          Selecciona una máquina arriba y presiona cualquiera de los botones para ver el resultado.
+      </section>
+
+      <section class="dashboard-panel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-people text-primary me-2"></i>Usuarios del portal
+            <span class="badge bg-light text-dark ms-2" id="contadorUsuarios">0</span>
+          </h5>
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" id="chkBorrarTickets">
+              <label class="form-check-label small text-muted" for="chkBorrarTickets">Al eliminar un usuario, borrar también sus tickets</label>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="cargarUsuarios()">
+              <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+            </button>
+          </div>
         </div>
-      </div>
+
+        <div class="tabla-scroll">
+          <table class="tabla-metricas">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Puesto</th>
+                <th>Prioridad base</th>
+                <th>Estado</th>
+                <th>Tickets (pend. / total)</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaUsuarios">
+              <tr><td colspan="6" class="text-muted text-center py-4">Cargando usuarios...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
-    <!-- CONSOLA COMPACTA TÉCNICA -->
-    <div class="card shadow-sm">
-      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-2">
-        <span class="small fw-bold">💻 Salida Detallada de Consola (Ansible Log)</span>
-        <div>
-          <button class="btn btn-sm btn-outline-light py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsole" aria-expanded="true">
-            👁️ Mostrar/Ocultar
+    <!-- SECCIÓN 4: TELEMETRÍA EN TIEMPO REAL -->
+    <div id="sec-metrics" class="seccion-contenido" style="display: none;">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="small"><span class="live-dot" id="liveDot"></span><span id="liveTexto" class="text-muted">Conectando...</span></span>
+        <span class="small text-muted">Actualización automática cada 5 s</span>
+      </div>
+
+      <!-- Indicadores generales -->
+      <section class="row g-3 mb-3">
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Estado del Portal (8080)</div>
+            <div class="metric-value text-ok" id="mtEstadoPortal">—</div>
+            <div class="metric-sub" id="mtPortalMs"></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Total de Tickets</div>
+            <div class="metric-value text-primary" id="mtTotal">0</div>
+            <div class="metric-sub" id="mtCreados24h"></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Pendientes</div>
+            <div class="metric-value text-warn" id="mtPendientes">0</div>
+            <div class="metric-sub">Sin resolver</div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Resueltos</div>
+            <div class="metric-value text-ok" id="mtResueltos">0</div>
+            <div class="metric-sub" id="mtResueltos24h"></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Tasa de Resolución</div>
+            <div class="metric-value text-info" id="mtTasa">0%</div>
+            <div class="metric-sub">Resueltos / total</div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-2">
+          <div class="kpi-card h-100">
+            <div class="metric-label">Usuarios Registrados</div>
+            <div class="metric-value" id="mtUsuarios">0</div>
+            <div class="metric-sub" id="mtBloqueados"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Indicadores de tiempo -->
+      <section class="row g-3 mb-3">
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card h-100">
+            <div class="metric-label"><i class="bi bi-stopwatch me-1"></i>Tiempo promedio de resolución</div>
+            <div class="metric-value" id="mtPromedio">—</div>
+            <div class="metric-sub" id="mtPromedioSub"></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card h-100">
+            <div class="metric-label"><i class="bi bi-bar-chart-steps me-1"></i>Mediana de resolución</div>
+            <div class="metric-value" id="mtMediana">—</div>
+            <div class="metric-sub">Valor central, menos sensible a casos extremos</div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card h-100">
+            <div class="metric-label"><i class="bi bi-hourglass-split me-1"></i>Antigüedad promedio pendientes</div>
+            <div class="metric-value" id="mtAntiguedad">—</div>
+            <div class="metric-sub">Tiempo que llevan esperando</div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="kpi-card h-100">
+            <div class="metric-label"><i class="bi bi-exclamation-diamond me-1"></i>Pendiente más antiguo</div>
+            <div class="metric-value" id="mtMasAntiguo">—</div>
+            <div class="metric-sub">Ticket con más tiempo sin atender</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gráficas -->
+      <section class="row g-3 mb-3">
+        <div class="col-12 col-xl-8">
+          <div class="kpi-card h-100" style="border-left: none; padding-left: 0;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-activity text-primary me-2"></i>Tickets en tiempo real</h6>
+            <div class="chart-box"><canvas id="chartVivo"></canvas></div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-4">
+          <div class="kpi-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart text-primary me-2"></i>Pendientes por prioridad</h6>
+            <div class="chart-box"><canvas id="chartPrioridad"></canvas></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-3 mb-4">
+        <div class="col-12 col-xl-6">
+          <div class="kpi-card h-100" style="border-left: none; padding-left: 0;">
+            <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart text-primary me-2"></i>Tipos de ticket más solicitados</h6>
+            <div class="tipo-top" id="tipoTop">Cargando...</div>
+            <div class="chart-box corta"><canvas id="chartTipo"></canvas></div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-6">
+          <div class="kpi-card h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-table text-primary me-2"></i>Resolución por prioridad</h6>
+            <table class="tabla-metricas">
+              <thead>
+                <tr>
+                  <th>Prioridad</th>
+                  <th>Pendientes</th>
+                  <th>Resueltos (con fecha)</th>
+                  <th>Tiempo promedio</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPrioridad">
+                <tr><td colspan="4" class="text-muted">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Panel de Resultados (oculto hasta que se ejecuta una tarea) -->
+    <section class="dashboard-panel mb-4" id="resultPanel" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0" id="summaryTitle">Resultados del Análisis</h5>
+        <span id="statusBadge" class="badge bg-secondary px-3 py-2">En espera</span>
+      </div>
+
+      <div id="loaderSpinner" class="loader-container">
+        <div class="pulse-spinner"></div>
+        <div class="loader-text" id="loaderText">Ejecutando tarea...</div>
+      </div>
+
+      <div id="summaryContent" class="text-muted small">
+        <div class="text-center py-4">
+          <p class="mb-0 text-muted">Inicia una tarea para ver el reporte.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Consola Log -->
+    <section class="terminal-card">
+      <div class="terminal-header">
+        <span class="small fw-semibold text-white">Consola de Salida (Ansible Terminal)</span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="limpiarConsola()">
+            Limpiar
+          </button>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsole" aria-expanded="true">
+            Ocultar/Mostrar
           </button>
         </div>
       </div>
       <div class="collapse show" id="collapseConsole">
-        <div class="card-body bg-dark p-2">
-          <div id="consoleOutput">Esperando instrucción...</div>
-        </div>
+        <pre id="consoleOutput">Consola lista para recibir instrucciones de ejecuciones de Ansible...</pre>
       </div>
-    </div>
+    </section>
 
-  </div>
+  </main>
 
   <!-- Modal de Confirmación -->
   <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="modalTitle">Confirmar Acción</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-header border-light border-opacity-25">
+          <h5 class="modal-title fw-bold text-white" id="modalTitle">Confirmar Acción</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body" id="modalBody">
-          ¿Estás seguro de que deseas ejecutar esta tarea?
+        <div class="modal-body py-4 text-white" id="modalBody">
+          ¿Deseas proceder con esta ejecución?
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="btnEjecutarModal">Sí, Ejecutar Tarea</button>
+        <div class="modal-footer border-light border-opacity-25">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnEjecutarModal">Confirmar y Ejecutar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap JS CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    let playbookSeleccionado = '';
-    let nombreTareaSeleccionada = '';
+    let playbookPendiente = '';
+    let nombreTareaPendiente = '';
+    let variablesPendientes = {};
+    let tagPendiente = null;
+    let alFinalizarPendiente = null;
     const modalConfirm = new bootstrap.Modal(document.getElementById('confirmModal'));
 
-    function confirmarAccion(playbookFile, nombreAmigable) {
-      playbookSeleccionado = playbookFile;
-      nombreTareaSeleccionada = nombreAmigable;
-      
-      const hostSelect = document.getElementById('targetHostSelect');
-      const hostTexto = hostSelect.options[hostSelect.selectedIndex].text;
+    // Configuración visual de las columnas del tablero
+    const PRIORIDADES = [
+      { key: 'CRITICA', label: 'CRÍTICA (Urgente)', color: '#ff4d5a', icon: 'bi-exclamation-octagon-fill' },
+      { key: 'ALTA',    label: 'ALTA',              color: '#ffa14a', icon: 'bi-exclamation-triangle-fill' },
+      { key: 'MEDIA',   label: 'MEDIA',             color: '#ffd23f', icon: 'bi-dash-circle-fill' },
+      { key: 'BAJA',    label: 'BAJA',              color: '#38bdf8', icon: 'bi-arrow-down-circle-fill' }
+    ];
 
-      document.getElementById('modalTitle').innerText = `Confirmación: ${nombreAmigable}`;
-      document.getElementById('modalBody').innerHTML = `Vas a ejecutar la tarea <strong>"${nombreAmigable}"</strong> en el servidor:<br><span class="badge bg-primary mt-2">${hostTexto}</span><br><br>¿Deseas continuar?`;
+    // Nombres legibles para el título del reporte
+    const NOMBRES_TAREA = {
+      resolver_ticket: 'Resolver ticket',
+      crear_usuario: 'Crear usuario',
+      eliminar_usuario: 'Eliminar usuario',
+      clasificar_usuario: 'Cambio de puesto',
+      bloquear_usuario: 'Bloquear usuario',
+      desbloquear_usuario: 'Desbloquear usuario'
+    };
+
+    function escaparHtml(valor) {
+      const d = document.createElement('div');
+      d.textContent = valor == null ? '' : String(valor);
+      return d.innerHTML;
+    }
+
+    // Para valores dentro de atributos HTML (también escapa comillas)
+    function escaparAtributo(valor) {
+      return escaparHtml(valor).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Si la sesión expiró, vuelve al inicio de sesión
+    function verificarSesion(res) {
+      if (res.status === 401) {
+        window.location.href = '/login';
+        throw new Error('Sesión expirada');
+      }
+      return res;
+    }
+
+    // ===== Panel de resultados =====
+    function reiniciarPanelResultados() {
+      document.getElementById('resultPanel').style.display = 'none';
+      document.getElementById('loaderSpinner').style.display = 'none';
+      document.getElementById('summaryTitle').innerText = 'Resultados del Análisis';
+
+      const badge = document.getElementById('statusBadge');
+      badge.className = 'badge bg-secondary px-3 py-2';
+      badge.innerText = 'En espera';
+
+      const contenido = document.getElementById('summaryContent');
+      contenido.style.display = 'block';
+      contenido.innerHTML = `<div class="text-center py-4"><p class="mb-0 text-muted">Inicia una tarea para ver el reporte.</p></div>`;
+
+      document.getElementById('consoleOutput').innerText = 'Consola lista para recibir instrucciones de ejecuciones de Ansible...';
+    }
+
+    // Navegación por la barra lateral: sube al inicio y limpia lo anterior
+    function cambiarSeccion(seccionId) {
+      detenerMetricas();
+
+      document.querySelectorAll('.seccion-contenido').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
+
+      document.getElementById(seccionId).style.display = 'block';
+      document.getElementById('btn-' + seccionId).classList.add('active');
+
+      const titulos = {
+        'sec-audit': '1. Funcionamiento del Portal',
+        'sec-admin': '2. Gestión de Tickets',
+        'sec-users': '3. Gestión de Usuarios del Portal',
+        'sec-metrics': '4. Estadísticas en Tiempo Real'
+      };
+      document.getElementById('sectionTitle').innerText = titulos[seccionId];
+
+      reiniciarPanelResultados();
+      window.scrollTo(0, 0);
+
+      if (seccionId === 'sec-admin') cargarTablero();
+      if (seccionId === 'sec-users') cargarUsuarios();
+      if (seccionId === 'sec-metrics') iniciarMetricas();
+    }
+
+    // opciones: { tag, mensaje (HTML ya escapado), alFinalizar }
+    function solicitarConfirmacion(archivoPlaybook, nombreTarea, variables = {}, opciones = {}) {
+      playbookPendiente = archivoPlaybook;
+      nombreTareaPendiente = nombreTarea;
+      variablesPendientes = variables;
+      tagPendiente = opciones.tag || null;
+      alFinalizarPendiente = opciones.alFinalizar || null;
+
+      document.getElementById('modalTitle').innerText = `Confirmación: ${nombreTarea}`;
+      document.getElementById('modalBody').innerHTML = opciones.mensaje
+        || `Se ejecutará la acción <strong>"${escaparHtml(nombreTarea)}"</strong> en el servidor.`;
       modalConfirm.show();
     }
 
     document.getElementById('btnEjecutarModal').addEventListener('click', function() {
       modalConfirm.hide();
-      const targetHost = document.getElementById('targetHostSelect').value;
-      ejecutarPlaybook(playbookSeleccionado, nombreTareaSeleccionada, targetHost);
+      ejecutarPlaybook(playbookPendiente, nombreTareaPendiente, tagPendiente, variablesPendientes, alFinalizarPendiente);
     });
 
-    function ejecutarPlaybook(playbook, nombreAmigable, targetHost) {
+    function ejecutarTarea(playbook, tag, variables = {}, alFinalizar = null) {
+      ejecutarPlaybook(playbook, NOMBRES_TAREA[tag] || `Acción ${tag}`, tag, variables, alFinalizar);
+    }
+
+    function ejecutarPlaybook(playbook, nombreTarea, tag = null, variables = {}, alFinalizar = null) {
       const consoleOutput = document.getElementById('consoleOutput');
       const badge = document.getElementById('statusBadge');
-      const summaryCard = document.getElementById('summaryCard');
       const summaryTitle = document.getElementById('summaryTitle');
       const summaryContent = document.getElementById('summaryContent');
+      const loaderSpinner = document.getElementById('loaderSpinner');
+      const panel = document.getElementById('resultPanel');
 
-      summaryCard.className = 'card shadow-sm mb-3 summary-card warning';
-      badge.className = 'badge bg-warning text-dark';
+      panel.style.display = 'block';
+
+      badge.className = 'badge bg-warning text-dark px-3 py-2';
       badge.innerText = 'Ejecutando...';
-      summaryTitle.innerText = `⏳ Ejecutando: ${nombreAmigable} [${targetHost}]`;
-      summaryContent.innerHTML = `<p class="mb-0">Procesando solicitud en el servidor <strong>${targetHost}</strong>. Por favor espera...</p>`;
-      
-      consoleOutput.innerText = `[LOG] Ejecutando playbook ${playbook} en ${targetHost}...\n`;
+      summaryTitle.innerText = `Ejecutando ${nombreTarea}`;
+
+      loaderSpinner.style.display = 'flex';
+      summaryContent.style.display = 'none';
+      consoleOutput.innerText = `Procesando ${playbook} (${tag || 'All'})...\n`;
+
+      // El host objetivo lo define el servidor (TARGET_HOST en app.py)
+      const payload = {
+        playbook: playbook,
+        tag: tag,
+        ...variables
+      };
 
       fetch('/run-playbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          playbook: playbook,
-          target_host: targetHost 
-        })
+        body: JSON.stringify(payload)
       })
+      .then(verificarSesion)
       .then(response => response.json())
       .then(data => {
+        loaderSpinner.style.display = 'none';
+        summaryContent.style.display = 'block';
         consoleOutput.innerText = data.output;
 
-        if (data.status === 'success') {
-          summaryCard.className = 'card shadow-sm mb-3 summary-card success';
-          badge.className = 'badge bg-success';
-          badge.innerText = 'Éxito';
-          summaryTitle.innerText = `✅ Tarea Completada en ${targetHost}: ${nombreAmigable}`;
+        const ok = data.status === 'success';
+        badge.className = ok ? 'badge bg-success px-3 py-2' : 'badge bg-danger px-3 py-2';
+        badge.innerText = ok ? 'Finalizado' : 'Falló';
+        summaryTitle.innerText = `Reporte de ${nombreTarea}`;
 
-          renderizarResumenAmigable(data.output, summaryContent);
-
+        if (ok) {
+          renderizarReporte(data.output, summaryContent);
         } else {
-          summaryCard.className = 'card shadow-sm mb-3 summary-card danger';
-          badge.className = 'badge bg-danger';
-          badge.innerText = 'Fallo';
-          summaryTitle.innerText = `🚨 Ocurrió un Problema en ${targetHost}: ${nombreAmigable}`;
-          summaryContent.innerHTML = `<div class="alert alert-danger mb-0 p-2">Error al ejecutar la tarea. Consulta la consola negra abajo.</div>`;
+          // Si el playbook explicó el motivo ("ERROR: ..."), se muestra en la página
+          const coincidencia = (data.output || '').match(/ERROR: [^"\\\n]+/);
+          const motivo = coincidencia ? coincidencia[0] : 'La ejecución terminó con errores. Revisa el detalle en la consola.';
+          summaryContent.innerHTML = `<div class="result-badge bad">[ERROR] ${escaparHtml(motivo.replace(/^ERROR: /, ''))}</div>`;
         }
+
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (alFinalizar) alFinalizar(ok, data);
       })
       .catch(error => {
-        summaryCard.className = 'card shadow-sm mb-3 summary-card danger';
-        badge.className = 'badge bg-danger';
-        badge.innerText = 'Error de Red';
-        summaryTitle.innerText = `🚨 Error de Conexión`;
-        summaryContent.innerHTML = `<div class="alert alert-danger mb-0 p-2">No se pudo contactar con la aplicación Flask: ${error}</div>`;
-        consoleOutput.innerText = `🚨 Error de red: ${error}`;
+        loaderSpinner.style.display = 'none';
+        summaryContent.style.display = 'block';
+        badge.className = 'badge bg-danger px-3 py-2';
+        badge.innerText = 'Error Red';
+        summaryTitle.innerText = `Error de Comunicación`;
+        summaryContent.innerHTML = `<div class="result-badge bad">[ERROR] No se pudo obtener respuesta del servidor Flask.</div>`;
+        consoleOutput.innerText = `Error: ${error}`;
       });
     }
 
-    function renderizarResumenAmigable(rawOutput, container) {
-      let lines = [];
-      try {
-        const matches = rawOutput.match(/"msg":\s*\[([\s\S]*?)\]/);
-        if (matches && matches[1]) {
-          lines = matches[1]
-            .split('\n')
-            .map(l => l.trim())
-            .map(l => l.replace(/^"|"$/g, '').replace(/\\"/g, '"').replace(/,/g, ''))
-            .filter(l => l.length > 0 && l !== '[' && l !== ']');
-        }
-      } catch (e) {
-        lines = [];
-      }
+    // Lee todos los "msg" de la salida de Ansible respetando comillas y corchetes anidados
+    function extraerMensajesAnsible(salidaCruda) {
+      const mensajes = [];
+      const patron = /"msg":\s*/g;
+      let coincidencia;
 
-      if (lines.length > 0) {
-        let html = '<div class="row g-2">';
-        lines.forEach(line => {
-          if (line.includes('===') || line.includes('---')) return;
+      while ((coincidencia = patron.exec(salidaCruda)) !== null) {
+        const inicio = patron.lastIndex;
+        const primerCaracter = salidaCruda[inicio];
+        let fin = -1;
 
-          let sublines = line.split('\\n');
-          
-          sublines.forEach(sub => {
-            let cleanLine = sub.replace(/["'\[\]]/g, '').trim();
-            if (cleanLine.length > 0) {
-              html += `<div class="col-12"><div class="result-item">${cleanLine}</div></div>`;
+        if (primerCaracter === '[' || primerCaracter === '{') {
+          let profundidad = 0, enCadena = false, escapado = false;
+          for (let j = inicio; j < salidaCruda.length; j++) {
+            const c = salidaCruda[j];
+            if (enCadena) {
+              if (escapado) escapado = false;
+              else if (c === '\\') escapado = true;
+              else if (c === '"') enCadena = false;
+            } else if (c === '"') enCadena = true;
+            else if (c === '[' || c === '{') profundidad++;
+            else if (c === ']' || c === '}') {
+              profundidad--;
+              if (profundidad === 0) { fin = j + 1; break; }
             }
-          });
-        });
-        html += '</div>';
-        container.innerHTML = html;
-      } else {
-        container.innerHTML = `<div class="alert alert-success mb-0 p-2">La tarea finalizó correctamente en el servidor.</div>`;
+          }
+        } else if (primerCaracter === '"') {
+          let escapado = false;
+          for (let j = inicio + 1; j < salidaCruda.length; j++) {
+            const c = salidaCruda[j];
+            if (escapado) escapado = false;
+            else if (c === '\\') escapado = true;
+            else if (c === '"') { fin = j + 1; break; }
+          }
+        }
+
+        if (fin > 0) {
+          try {
+            const valor = JSON.parse(salidaCruda.slice(inicio, fin));
+            (Array.isArray(valor) ? valor.flat(Infinity) : [valor]).forEach(x => mensajes.push(String(x)));
+          } catch (e) { /* se ignora un mensaje ilegible */ }
+          patron.lastIndex = fin;
+        }
       }
+      return mensajes;
+    }
+
+    // Cada línea se colorea según su etiqueta: [OK] verde, [AVISO] amarillo, [ERROR] rojo
+    function renderizarReporte(salidaCruda, contenedor) {
+      const lineas = extraerMensajesAnsible(salidaCruda)
+        .filter(l => l.trim().length > 0 && !l.includes('======'));
+
+      if (lineas.length === 0) {
+        contenedor.innerHTML = `<div class="result-badge ok">[OK] Operación completada. Revisa el detalle de salida en la consola.</div>`;
+        return;
+      }
+
+      let html = '<div class="row g-2">';
+      lineas.forEach(linea => {
+        const esSubnivel = /^\s{2,}/.test(linea) || linea.trimStart().startsWith('•');
+        let clase = esSubnivel ? 'sub' : '';
+        if (!esSubnivel) {
+          if (linea.startsWith('[OK]')) clase = 'ok';
+          else if (linea.startsWith('[AVISO]')) clase = 'warn';
+          else if (linea.startsWith('[ERROR]')) clase = 'bad';
+        }
+        const texto = esSubnivel ? linea.trimStart() : linea;
+        html += `<div class="col-12"><div class="result-badge ${clase}">${escaparHtml(texto)}</div></div>`;
+      });
+      html += '</div>';
+      contenedor.innerHTML = html;
+    }
+
+    // ===== Vista de tickets =====
+    function listarTickets() {
+      reiniciarPanelResultados();
+      cargarTablero();
+    }
+
+    function resolverTicket(id) {
+      id = (id || '').trim();
+      if (!id) {
+        alert('Escribe o selecciona el ID de un ticket.');
+        return;
+      }
+      ejecutarTarea('gestion_portal_auth.yml', 'resolver_ticket', { ticket_id: id }, () => cargarTablero());
+    }
+
+    function copiarId(id) {
+      document.getElementById('ticketIdInput').value = id;
+    }
+
+    function cargarTablero() {
+      const contenedor = document.getElementById('boardContainer');
+      fetch('/api/tickets')
+        .then(verificarSesion)
+        .then(res => res.json())
+        .then(data => renderizarTablero(data, contenedor))
+        .catch(err => {
+          contenedor.innerHTML = `<div class="board-empty w-100 text-err">No se pudieron cargar los tickets.</div>`;
+          console.error('Error al cargar tablero:', err);
+        });
+    }
+
+    function renderizarTablero(data, contenedor) {
+      let html = '';
+
+      PRIORIDADES.forEach(p => {
+        const tickets = data[p.key] || [];
+        html += `<div class="col-12 col-md-6 col-xl-3">
+          <div class="board-col" style="--col-color:${p.color}">
+            <div class="board-col-header">
+              <span class="board-col-title"><i class="bi ${p.icon}"></i>${p.label}</span>
+              <span class="board-count">${tickets.length}</span>
+            </div>`;
+
+        if (tickets.length === 0) {
+          html += `<div class="board-empty">Sin tickets pendientes</div>`;
+        } else {
+          let tipoActual = null;
+          tickets.forEach(t => {
+            if (t.tipo !== tipoActual) {
+              tipoActual = t.tipo;
+              html += `<div class="board-type-label">${escaparHtml(tipoActual)}</div>`;
+            }
+            html += `<div class="ticket-card">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <strong>${escaparHtml(t.usuario || 'Sin usuario')}</strong>
+                  <span class="ticket-meta">(${escaparHtml(t.puesto || '—')})</span>
+                </div>
+                ${t.modalidad ? `<span class="badge bg-light bg-opacity-10 text-info border border-info border-opacity-50">${escaparHtml(t.modalidad)}</span>` : ''}
+              </div>
+              ${t.afectado ? `<div class="mt-1"><i class="bi bi-pc-display me-1 text-muted"></i>${escaparHtml(t.afectado)}</div>` : ''}
+              ${t.descripcion ? `<div class="ticket-meta mt-1">${escaparHtml(t.descripcion)}</div>` : ''}
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <span class="ticket-id" title="Clic para copiar al campo de ID" onclick="copiarId('${escaparAtributo(t.id)}')">#${escaparHtml(t.id.slice(-6))}</span>
+                <button class="btn btn-success btn-sm py-0 px-2" onclick="resolverTicket('${escaparAtributo(t.id)}')">
+                  <i class="bi bi-check-circle me-1"></i>Resolver
+                </button>
+              </div>
+            </div>`;
+          });
+        }
+
+        html += `</div></div>`;
+      });
+
+      contenedor.innerHTML = html;
+    }
+
+    // ===== Gestión de usuarios =====
+    function normalizarTexto(texto) {
+      return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    }
+
+    function cargarUsuarios() {
+      fetch('/api/usuarios')
+        .then(verificarSesion)
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(datos => renderizarUsuarios(datos))
+        .catch(err => {
+          document.getElementById('tablaUsuarios').innerHTML =
+            `<tr><td colspan="6" class="text-err text-center py-4">No se pudieron cargar los usuarios.</td></tr>`;
+          console.error('Error al cargar usuarios:', err);
+        });
+    }
+
+    function renderizarUsuarios(datos) {
+      const cuerpo = document.getElementById('tablaUsuarios');
+      const usuarios = datos.usuarios || [];
+      document.getElementById('contadorUsuarios').innerText = usuarios.length;
+
+      if (usuarios.length === 0) {
+        cuerpo.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">No hay usuarios registrados.</td></tr>`;
+        return;
+      }
+
+      cuerpo.innerHTML = usuarios.map(u => {
+        const nombre = escaparAtributo(u.username);
+        const bloqueado = u.status === 'LOCKED';
+        const lista = datos.puestos.includes(u.puesto) ? datos.puestos : [u.puesto || '—', ...datos.puestos];
+        const opciones = lista.map(p =>
+          `<option value="${escaparAtributo(p)}" ${p === u.puesto ? 'selected' : ''}>${escaparHtml(p)}</option>`).join('');
+
+        const prio = PRIORIDADES.find(p => p.key === normalizarTexto(u.prioridad_base));
+        const colorPrio = prio ? prio.color : '#64748b';
+
+        const botonBloqueo = bloqueado
+          ? `<button class="btn btn-outline-success btn-sm" data-accion="desbloquear" data-usuario="${nombre}"><i class="bi bi-unlock me-1"></i>Desbloquear</button>`
+          : `<button class="btn btn-warning btn-sm fw-bold" data-accion="bloquear" data-usuario="${nombre}"><i class="bi bi-lock me-1"></i>Bloquear</button>`;
+
+        return `<tr>
+          <td><strong>${escaparHtml(u.username)}</strong></td>
+          <td>
+            <select class="form-select node-select-box select-puesto" data-accion="puesto" data-usuario="${nombre}">${opciones}</select>
+          </td>
+          <td><span class="punto-prio" style="background:${colorPrio}"></span>${escaparHtml(u.prioridad_base || '—')}</td>
+          <td>${bloqueado
+            ? '<span class="text-err fw-bold">Bloqueado</span>'
+            : '<span class="text-ok fw-bold">Activo</span>'}</td>
+          <td>${u.tickets_pendientes} / ${u.tickets_total}</td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-2">
+              ${botonBloqueo}
+              <button class="btn btn-outline-danger btn-sm" data-accion="eliminar" data-usuario="${nombre}"><i class="bi bi-trash me-1"></i>Eliminar</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function accionUsuario(accion, usuario, valor) {
+      const refrescar = () => cargarUsuarios();
+
+      if (accion === 'bloquear') {
+        ejecutarTarea('gestion_portal_auth.yml', 'bloquear_usuario', { user_name: usuario }, refrescar);
+      } else if (accion === 'desbloquear') {
+        ejecutarTarea('gestion_portal_auth.yml', 'desbloquear_usuario', { user_name: usuario }, refrescar);
+      } else if (accion === 'puesto') {
+        ejecutarTarea('gestion_portal_auth.yml', 'clasificar_usuario', { user_name: usuario, nuevo_puesto: valor }, refrescar);
+      } else if (accion === 'eliminar') {
+        const conTickets = document.getElementById('chkBorrarTickets').checked;
+        const aviso = conTickets
+          ? 'También se <strong>borrarán todos sus tickets</strong> (pendientes y resueltos).'
+          : 'Sus tickets se conservarán.';
+        solicitarConfirmacion(
+          'gestion_portal_auth.yml',
+          'Eliminar usuario',
+          { user_name: usuario, borrar_tickets: conTickets },
+          {
+            tag: 'eliminar_usuario',
+            mensaje: `Se eliminará al usuario <strong>${escaparHtml(usuario)}</strong>.<br>${aviso}<br><span class="text-warn small">Esta acción no se puede deshacer.</span>`,
+            alFinalizar: refrescar
+          }
+        );
+      }
+    }
+
+    function crearUsuario() {
+      const campoNombre = document.getElementById('nuevoUsuarioNombre');
+      const campoClave = document.getElementById('nuevoUsuarioClave');
+      const puesto = document.getElementById('nuevoUsuarioPuesto').value;
+      const nombre = campoNombre.value.trim();
+      const clave = campoClave.value;
+
+      if (!/^[A-Za-z0-9_.-]{3,30}$/.test(nombre)) {
+        alert('El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion o guion bajo.');
+        return;
+      }
+      if (clave.trim().length < 4) {
+        alert('La contraseña debe tener al menos 4 caracteres.');
+        return;
+      }
+
+      ejecutarTarea(
+        'gestion_portal_auth.yml',
+        'crear_usuario',
+        { user_name: nombre, nueva_password: clave, nuevo_puesto: puesto },
+        (ok) => {
+          if (ok) {
+            campoNombre.value = '';
+            campoClave.value = '';
+            document.getElementById('nuevoUsuarioPuesto').value = 'Empleado';
+          }
+          cargarUsuarios();
+        }
+      );
+    }
+
+    // Un solo manejador para todos los botones y selectores de la tabla
+    const cuerpoUsuarios = document.getElementById('tablaUsuarios');
+    cuerpoUsuarios.addEventListener('click', function(e) {
+      const boton = e.target.closest('button[data-accion]');
+      if (boton) accionUsuario(boton.dataset.accion, boton.dataset.usuario);
+    });
+    cuerpoUsuarios.addEventListener('change', function(e) {
+      const selector = e.target.closest('select[data-accion]');
+      if (selector) accionUsuario('puesto', selector.dataset.usuario, selector.value);
+    });
+
+    // ===== Telemetría en tiempo real =====
+    const INTERVALO_METRICAS_MS = 5000;
+    const MAX_PUNTOS_VIVO = 40;
+    const COLOR_TIPO_TOP = '#ffd23f';
+    const COLOR_TIPO_RESTO = '#38bdf8';
+    const historialVivo = { etiquetas: [], pendientes: [], resueltos: [] };
+    let detalleTipo = [];
+    let graficaVivo = null;
+    let graficaPrioridad = null;
+    let graficaTipo = null;
+    let temporizadorMetricas = null;
+
+    function formatearDuracion(segundos) {
+      if (segundos == null) return '—';
+      const s = Math.round(segundos);
+      const d = Math.floor(s / 86400);
+      const h = Math.floor((s % 86400) / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const r = s % 60;
+      if (d > 0) return `${d} d ${h} h`;
+      if (h > 0) return `${h} h ${m} min`;
+      if (m > 0) return `${m} min ${r} s`;
+      return `${r} s`;
+    }
+
+    function crearGraficas() {
+      if (graficaVivo) return;
+
+      Chart.defaults.color = '#d4def7';
+      Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.14)';
+
+      graficaVivo = new Chart(document.getElementById('chartVivo'), {
+        type: 'line',
+        data: {
+          labels: historialVivo.etiquetas,
+          datasets: [
+            { label: 'Pendientes', data: historialVivo.pendientes, borderColor: '#ffa14a', backgroundColor: 'rgba(255,161,74,0.18)', fill: true, tension: 0.3, pointRadius: 2 },
+            { label: 'Resueltos',  data: historialVivo.resueltos,  borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.16)', fill: true, tension: 0.3, pointRadius: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { maxTicksLimit: 8 } } },
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+
+      graficaPrioridad = new Chart(document.getElementById('chartPrioridad'), {
+        type: 'doughnut',
+        data: {
+          labels: PRIORIDADES.map(p => p.label.replace(' (Urgente)', '')),
+          datasets: [{ data: [0, 0, 0, 0], backgroundColor: PRIORIDADES.map(p => p.color), borderColor: '#04164f', borderWidth: 2 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+
+      // Barras con el total de tickets por tipo, ordenadas de mayor a menor
+      graficaTipo = new Chart(document.getElementById('chartTipo'), {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{ label: 'Total de tickets', data: [], backgroundColor: [], borderRadius: 4 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterLabel: function(ctx) {
+                  const d = detalleTipo[ctx.dataIndex];
+                  return d ? [`Pendientes: ${d.pendientes}`, `Resueltos: ${d.resueltos}`] : [];
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Ordena los tipos por cantidad, resalta el más frecuente y escribe el aviso
+    function actualizarTiposMasSolicitados(porTipo) {
+      const filas = Object.entries(porTipo)
+        .map(([tipo, v]) => ({ tipo, pendientes: v.pendientes, resueltos: v.resueltos, total: v.pendientes + v.resueltos }))
+        .sort((a, b) => b.total - a.total);
+
+      const totalGeneral = filas.reduce((suma, f) => suma + f.total, 0);
+      const maximo = filas.length ? filas[0].total : 0;
+      detalleTipo = filas;
+
+      graficaTipo.data.labels = filas.map(f =>
+        totalGeneral > 0 ? `${f.tipo} (${Math.round(100 * f.total / totalGeneral)}%)` : f.tipo);
+      graficaTipo.data.datasets[0].data = filas.map(f => f.total);
+      graficaTipo.data.datasets[0].backgroundColor = filas.map(f =>
+        (maximo > 0 && f.total === maximo) ? COLOR_TIPO_TOP : COLOR_TIPO_RESTO);
+      graficaTipo.update('none');
+
+      const aviso = document.getElementById('tipoTop');
+      if (totalGeneral === 0) {
+        aviso.innerHTML = 'Aún no hay tickets registrados.';
+        return;
+      }
+
+      const lideres = filas.filter(f => f.total === maximo);
+      const porcentaje = Math.round(100 * maximo / totalGeneral);
+      if (lideres.length === 1) {
+        aviso.innerHTML = `<i class="bi bi-trophy-fill me-2" style="color:${COLOR_TIPO_TOP}"></i>Tipo más frecuente: <strong>${escaparHtml(lideres[0].tipo)}</strong> — ${maximo} de ${totalGeneral} tickets (${porcentaje}%)`;
+      } else {
+        const nombres = lideres.map(f => escaparHtml(f.tipo)).join(' y ');
+        aviso.innerHTML = `<i class="bi bi-trophy-fill me-2" style="color:${COLOR_TIPO_TOP}"></i>Empate en el primer lugar: <strong>${nombres}</strong> — ${maximo} tickets cada uno (${porcentaje}%)`;
+      }
+    }
+
+    function establecerTexto(id, texto) {
+      document.getElementById(id).innerText = texto;
+    }
+
+    function marcarConexion(activa, texto) {
+      document.getElementById('liveDot').className = activa ? 'live-dot' : 'live-dot off';
+      const etiqueta = document.getElementById('liveTexto');
+      etiqueta.className = activa ? 'text-ok' : 'text-err';
+      etiqueta.innerText = texto;
+    }
+
+    function actualizarMetricas() {
+      if (document.hidden) return;
+
+      fetch('/api/metricas')
+        .then(verificarSesion)
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(m => {
+          marcarConexion(true, `Conectado en vivo · actualizado ${m.actualizado}`);
+
+          // Indicadores generales
+          const portal = document.getElementById('mtEstadoPortal');
+          portal.innerText = m.estado_portal;
+          portal.className = 'metric-value ' + (m.estado_portal === 'ONLINE' ? 'text-ok' : 'text-err');
+          establecerTexto('mtPortalMs', m.portal_ms != null ? `Responde en ${m.portal_ms} ms` : 'Sin respuesta');
+          establecerTexto('mtTotal', m.total);
+          establecerTexto('mtCreados24h', `${m.creados_24h} creados en 24 h`);
+          establecerTexto('mtPendientes', m.pendientes);
+          establecerTexto('mtResueltos', m.resueltos);
+          establecerTexto('mtResueltos24h', `${m.resueltos_24h} resueltos en 24 h`);
+          establecerTexto('mtTasa', `${m.tasa_resolucion}%`);
+          establecerTexto('mtUsuarios', m.usuarios);
+          establecerTexto('mtBloqueados', `${m.usuarios_bloqueados} bloqueados`);
+
+          // Tiempos
+          establecerTexto('mtPromedio', formatearDuracion(m.tiempo_promedio_seg));
+          establecerTexto('mtMediana', formatearDuracion(m.tiempo_mediana_seg));
+          establecerTexto('mtAntiguedad', formatearDuracion(m.antiguedad_promedio_seg));
+          establecerTexto('mtMasAntiguo', formatearDuracion(m.mas_antiguo_seg));
+
+          // Gráfica en vivo
+          historialVivo.etiquetas.push(m.actualizado);
+          historialVivo.pendientes.push(m.pendientes);
+          historialVivo.resueltos.push(m.resueltos);
+          if (historialVivo.etiquetas.length > MAX_PUNTOS_VIVO) {
+            historialVivo.etiquetas.shift();
+            historialVivo.pendientes.shift();
+            historialVivo.resueltos.shift();
+          }
+          graficaVivo.update('none');
+
+          // Dona por prioridad
+          graficaPrioridad.data.datasets[0].data = PRIORIDADES.map(p => m.por_prioridad[p.key].pendientes);
+          graficaPrioridad.update('none');
+
+          // Barras: tipos más solicitados
+          actualizarTiposMasSolicitados(m.por_tipo);
+
+          // Tabla por prioridad
+          let filas = '';
+          PRIORIDADES.forEach(p => {
+            const d = m.por_prioridad[p.key];
+            filas += `<tr>
+              <td><span class="punto-prio" style="background:${p.color}"></span>${escaparHtml(p.label.replace(' (Urgente)', ''))}</td>
+              <td>${d.pendientes}</td>
+              <td>${d.resueltos_con_fecha}</td>
+              <td>${formatearDuracion(d.promedio_seg)}</td>
+            </tr>`;
+          });
+          document.getElementById('tablaPrioridad').innerHTML = filas;
+        })
+        .catch(err => {
+          marcarConexion(false, 'Sin conexión con el servidor');
+          console.error('Error al cargar métricas:', err);
+        });
+    }
+
+    function iniciarMetricas() {
+      crearGraficas();
+      actualizarMetricas();
+      temporizadorMetricas = setInterval(actualizarMetricas, INTERVALO_METRICAS_MS);
+    }
+
+    function detenerMetricas() {
+      if (temporizadorMetricas) {
+        clearInterval(temporizadorMetricas);
+        temporizadorMetricas = null;
+      }
+    }
+
+    function limpiarConsola() {
+      document.getElementById('consoleOutput').innerText = 'Consola limpia.';
     }
   </script>
 </body>

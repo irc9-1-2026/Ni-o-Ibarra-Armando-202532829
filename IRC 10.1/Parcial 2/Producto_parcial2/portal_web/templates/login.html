@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Soporte TI | Acceso</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  
+  <style>
+    body.auth-body {
+      background-color: #061e5c;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .auth-card {
+      background-color: #0d3896;
+      border-radius: 16px;
+      padding: 38px 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+      border-top: 4px solid #ef233c;
+      color: #ffffff;
+    }
+
+    .auth-icon {
+      font-size: 2.8rem;
+      color: #38bdf8;
+    }
+
+    .form-control {
+      background-color: #092870;
+      border: 1px solid #1d4ed8;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+    }
+
+    .form-control:focus {
+      background-color: #08215e;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-primary {
+      background-color: #38bdf8;
+      border: none;
+      color: #061e5c;
+      font-weight: 700;
+      padding: 10px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background-color: #0284c7;
+      color: #ffffff;
+    }
+
+    .text-muted-custom {
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body class="auth-body">
+  <div class="auth-card">
+    <div class="text-center mb-4">
+      <i class="bi bi-ticket-perforated auth-icon"></i>
+      <h1 class="h3 fw-bold mt-2 mb-1">Centro de Soporte TI</h1>
+      <p class="text-muted-custom small mb-0">Genera reportes sobre incidencias</p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger py-2 small" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('login') }}">
+      <div class="mb-3">
+        <label class="small text-muted-custom mb-1" for="username">Usuario</label>
+        <input type="text" class="form-control" id="username" name="username" autocomplete="username" autofocus required>
+      </div>
+      <div class="mb-4">
+        <label class="small text-muted-custom mb-1" for="password">Contraseña</label>
+        <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100"><i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión</button>
+    </form>
+
+    <p class="text-center small text-muted-custom mt-4 mb-0">
+      ¿No tienes cuenta? Solicítala al administrador.
+    </p>
+  </div>
+</body>
+</html>

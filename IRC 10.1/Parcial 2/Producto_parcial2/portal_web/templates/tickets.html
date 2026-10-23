@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Soporte TI | Mis Tickets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* Fondo azul marino principal */
+        body {
+            background-color: #041238;
+            color: #ffffff;
+            font-family: system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Barra de navegación superior */
+        .navbar-custom {
+            background-color: #061e5c;
+            border-bottom: 2px solid #0d3896;
+        }
+
+        /* Tarjetas integradas con borde superior rojo */
+        .card-custom {
+            background-color: #092368;
+            border-radius: 12px;
+            border: 1px solid #1d4ed8;
+            border-top: 4px solid #ef233c; /* Borde rojo superior */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+        }
+
+        /* Estilo de las entradas de texto y seleccionables */
+        .form-control, .form-select {
+            background-color: #061848 !important;
+            border: 1px solid #1d4ed8 !important;
+            color: #ffffff !important;
+            border-radius: 8px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #08215e !important;
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important;
+        }
+
+        /* Botón principal Cyan */
+        .btn-primary-custom {
+            background-color: #38bdf8;
+            border: none;
+            color: #061e5c;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary-custom:hover {
+            background-color: #0284c7;
+            color: #ffffff;
+        }
+
+        /* Tabla estilizada con textos blancos */
+        .table-custom {
+            color: #ffffff;
+            --bs-table-bg: transparent;
+        }
+
+        .table-custom th {
+            border-bottom: 2px solid #1d4ed8;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .table-custom td {
+            border-bottom: 1px solid rgba(29, 78, 216, 0.4);
+            vertical-align: middle;
+            color: #ffffff;
+        }
+
+        .text-white-custom {
+            color: #f8fafc !important;
+        }
+
+        /* Badges estilizados */
+        .badge-modality {
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .badge-priority {
+            background-color: #1e293b;
+            color: #ffffff;
+            border: 1px solid #475569;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-custom py-3 mb-4">
+    <div class="container">
+        <span class="navbar-brand fw-bold d-flex align-items-center gap-2 text-white">
+            <i class="bi bi-ticket-perforated text-info"></i> Centro de Soporte TI
+        </span>
+        <span class="text-white">
+            Usuario: <strong class="text-info">{{ user.username }}</strong> - <span class="text-white-custom">{{ user.puesto }}</span> | 
+            <a href="/logout" class="btn btn-sm btn-outline-danger ms-2">Salir</a>
+        </span>
+    </div>
+</nav>
+
+<div class="container pb-5">
+    <div class="row g-4">
+        <!-- Columna Izquierda: Formulario -->
+        <div class="col-md-5">
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-white">
+                    <i class="bi bi-plus-circle text-info"></i> Crear Solicitud de Ticket
+                </h5>
+                <form action="/crear-ticket" method="POST">
+                    <div class="mb-3">
+                        <label class="small text-white-custom mb-1 fw-semibold">Tipo de Ticket:</label>
+                        <select name="tipo_ticket" class="form-select" required>
+                            <option value="Soporte">Soporte TÉCNICO</option>
+                            <option value="Falla">Falla de Sistema</option>
+                            <option value="Equipo Físico">Equipo Físico (Hardware)</option>
+                            <option value="Programas">Programas (Software)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-white-custom mb-1 fw-semibold">Modalidad del Problema:</label>
+                        <select name="modalidad" class="form-select">
+                            <option value="Remoto">Remoto</option>
+                            <option value="Físico">Físico / Presencial</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-white-custom mb-1 fw-semibold">Equipo Afectado / Programa:</label>
+                        <input type="text" name="detalle_afectado" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-white-custom mb-1 fw-semibold">Descripción Corta:</label>
+                        <textarea name="descripcion" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary-custom w-100">Generar Ticket</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Tabla de Solicitudes -->
+        <div class="col-md-7">
+            <div class="card card-custom p-4">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2 text-white">
+                    <i class="bi bi-list-task text-info"></i> Estado de mis Solicitudes
+                </h5>
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tipo / Afectado</th>
+                                <th>Modalidad</th>
+                                <th>Prioridad</th>
+                                <th>Estatus del Ticket</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in tickets %}
+                            <tr>
+                                <td>
+                                    <strong class="text-white">{{ t.tipo_ticket }}</strong><br>
+                                    <small class="text-white-custom">{{ t.detalle_afectado }}</small>
+                                </td>
+                                <td><span class="badge badge-modality">{{ t.modalidad }}</span></td>
+                                <td><span class="badge badge-priority">{{ t.prioridad }}</span></td>
+                                <td>
+                                    {% if t.estado == 'RESUELTO' %}
+                                        <span class="badge bg-success p-2">RESUELTO</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark p-2">PENDIENTE</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-white-custom py-4">No tienes tickets registrados actualmente.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

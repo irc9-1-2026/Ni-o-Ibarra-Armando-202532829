@@ -1,21 +1,36 @@
 ---
-- name: Prueba de Conexión Multiplataforma
-  hosts: "{{ target_host | default('all') }}"
-  gather_facts: false
+- name: Prueba de conexión SSH a Rocky2 y estado de los servicios del portal
+  hosts: "{{ target_host | default('Rocky2') }}"
+  gather_facts: no
   tasks:
-    - name: 1. Prueba de Ping en Linux
-      ping:
-      when: ansible_connection != 'winrm'
-      register: ping_linux
+    - name: Ping por SSH
+      ansible.builtin.ping:
 
-    - name: 2. Prueba de Ping en Windows Server
-      ansible.windows.win_ping:
-      when: ansible_connection == 'winrm'
-      register: ping_win
+    - name: Datos del servidor y servicios
+      ansible.builtin.shell: |
+        echo "SERVIDOR: $(hostname)"
+        echo "SISTEMA: $(. /etc/os-release; echo $PRETTY_NAME) | **Kernel:** $(uname -r)"
+        echo "USUARIO SSH: $(whoami)"
+        echo "TIEMPO ACTIVO: $(uptime -p)"
+        for c in mongodb_itsm flask_ansible_ui portal_web_app; do
+          s=$(docker inspect -f '{% raw %}{{.State.Status}}{% endraw %}' $c 2>/dev/null || echo ausente)
+          if [ "$s" = "running" ]; then 
+            echo "[OK] Contenedor $c: en ejecución"
+          else 
+            echo "[ERROR] Contenedor $c:** $s"
+          fi
+        done
+        code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/login)
+        if [ "$code" = "200" ]; then 
+          echo "[OK] **Portal web (8080):** responde HTTP $code"
+        else 
+          echo "[ERROR] **Portal web (8080):** HTTP $code"
+        fi
+      args:
+        executable: /bin/bash
+      register: info
+      changed_when: false
 
-    - name: 3. Confirmación de respuesta
-      debug:
-        msg:
-          - "======  CONEXIÓN ESTABLECIDA EXITOSAMENTE ======"
-          - "Servidor consultado: {{ inventory_hostname }}"
-          - "Estado de respuesta: ONLINE (Respuesta de sistema OK)"
+    - name: Reporte de conexión
+      ansible.builtin.debug:
+        msg: "{{ ['[OK] Conexión SSH establecida con ' ~ inventory_hostname] + info.stdout_lines }}"

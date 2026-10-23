@@ -1,13 +1,66 @@
 services:
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb_itsm
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=itsm_db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      itsm_net:
+        aliases:
+          - mongodb
+
   flask-ansible:
     build: .
     container_name: flask_ansible_ui
+    restart: always
     ports:
       - "5000:5000"
+    depends_on:
+      - mongodb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./app/playbooks:/app/app/playbooks
+      - ./app:/app/app
       - ./inventory.ini:/app/inventory.ini:ro
       - ./keys:/keys:ro
     environment:
       - ANSIBLE_HOST_KEY_CHECKING=False
       - PYTHONUNBUFFERED=1
+      - MONGO_URI=mongodb://mongodb_itsm:27017/itsm_db
+      - TARGET_HOST=Rocky2
+      - ADMIN_USER=${ADMIN_USER:-admin}
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-}
+      - SECRET_KEY=${SECRET_KEY:-}
+    networks:
+      - itsm_net
+
+  portal-web:
+    image: python:3.12-slim
+    container_name: portal_web_app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./portal_web:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install flask pymongo && python app_portal.py"
+    environment:
+      - MONGO_URI=mongodb://mongodb_itsm:27017/itsm_db
+      - SECRET_KEY=${PORTAL_SECRET_KEY:-}
+    networks:
+      - itsm_net
+
+volumes:
+  mongo_data:
+
+networks:
+  itsm_net:
+    driver: bridge

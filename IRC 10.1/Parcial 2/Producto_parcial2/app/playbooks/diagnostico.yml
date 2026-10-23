@@ -1,38 +1,28 @@
 ---
-- name: Diagnóstico de Salud del Sistema (Linux y Windows)
-  hosts: "{{ target_host | default('all') }}"
-  gather_facts: false
+- name: Diagnóstico de recursos de Rocky2 y del portal
+  hosts: "{{ target_host | default('Rocky2') }}"
+  gather_facts: no
   tasks:
-    # SECCIÓN LINUX
-    - name: Diagnóstico Memoria y Disco en Linux
-      when: ansible_connection != 'winrm'
-      block:
-        - shell: "free -m | awk 'NR==2{printf \"RAM en uso: %s MB de %s MB (%.2f%%)\", $3, $2, $3*100/$2 }'"
-          register: memory_linux
-        - shell: "df -h / | awk 'NR==2{print \"Almacenamiento libre: \" $4 \" disponible de \" $2 \" (\" $5 \" usado)\"}'"
-          register: disk_linux
-        - debug:
-            msg:
-              - "====== 🩺 REPORTE DE SALUD (LINUX) ======"
-              - "• {{ memory_linux.stdout }}"
-              - "• {{ disk_linux.stdout }}"
+    - name: Recolectar métricas por SSH
+      ansible.builtin.shell: |
+        n=$(nproc)
+        l1=$(cut -d' ' -f1 /proc/loadavg)
+        if awk -v l="$l1" -v n="$n" 'BEGIN{exit !(l<n)}'; then t="[OK]"; else t="[AVISO]"; fi
+        echo "$t CPU: carga $(cut -d' ' -f1-3 /proc/loadavg) (1, 5 y 15 min) en $n núcleos"
+        free -m | awk '/Mem:/ {p=$3*100/$2; t=(p<85)?"[OK]":"[AVISO]"; printf "%s RAM: %d MB usados de %d MB (%d%%)\n", t, $3, $2, p}'
+        df -h / | awk 'NR==2 {p=$5; sub("%","",p); t=(p<85)?"[OK]":"[AVISO]"; print t " Disco /: " $3 " usados de " $2 " (" $5 ")"}'
+        echo "TIEMPO ACTIVO: $(uptime -p)"
+        echo "CONTENEDORES ACTIVOS: $(docker ps -q | wc -l)"
+        docker ps --format '   • {% raw %}{{.Names}}{% endraw %}: {% raw %}{{.Status}}{% endraw %}'
+        m=$(docker exec mongodb_itsm mongo itsm_db --quiet --eval 'print(db.users.count() + " usuarios, " + db.tickets.count({estado:"PENDIENTE"}) + " tickets pendientes, " + db.tickets.count({estado:"RESUELTO"}) + " resueltos")' 2>/dev/null)
+        if [ -n "$m" ]; then echo "[OK] MongoDB: $m"; else echo "[ERROR] MongoDB: sin respuesta"; fi
+        r=$(curl -s -o /dev/null -w '%{http_code} en %{time_total}s' --max-time 5 http://localhost:8080/login)
+        case "$r" in 200*) echo "[OK] Portal web: HTTP $r";; *) echo "[ERROR] Portal web: HTTP $r";; esac
+      args:
+        executable: /bin/bash
+      register: salud
+      changed_when: false
 
-    # SECCIÓN WINDOWS SERVER
-    - name: Diagnóstico Memoria y Disco en Windows Server
-      when: ansible_connection == 'winrm'
-      block:
-        - ansible.windows.win_powershell:
-            script: |
-              $ram = Get-CimInstance Win32_OperatingSystem
-              "RAM en uso: $([math]::Round(($ram.TotalVisibleMemorySize - $ram.FreePhysicalMemory)/1024)) MB de $([math]::Round($ram.TotalVisibleMemorySize/1024)) MB"
-          register: memory_win
-        - ansible.windows.win_powershell:
-            script: |
-              $disk = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'"
-              "Almacenamiento libre C: $([math]::Round($disk.FreeSpace/1GB, 2)) GB disponible de $([math]::Round($disk.Size/1GB, 2)) GB"
-          register: disk_win
-        - debug:
-            msg:
-              - "====== 🩺 REPORTE DE SALUD (WINDOWS SERVER 2022) ======"
-              - "• {{ memory_win.output[0] }}"
-              - "• {{ disk_win.output[0] }}"
+    - name: Reporte de salud
+      ansible.builtin.debug:
+        msg: "{{ salud.stdout_lines }}"

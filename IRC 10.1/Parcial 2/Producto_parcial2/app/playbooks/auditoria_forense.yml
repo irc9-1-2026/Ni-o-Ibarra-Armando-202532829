@@ -1,89 +1,93 @@
 ---
-- name: Auditoría Forense y Análisis de Seguridad Multiplataforma
-  hosts: "{{ target_host | default('all') }}"
-  gather_facts: false
+- name: Auditoría de seguridad de Rocky2 y del portal web
+  hosts: "{{ target_host | default('Rocky2') }}"
+  gather_facts: no
   tasks:
-    # ----------------------------------------------------
-    # SECCIÓN LINUX (Rocky, Kali, etc.)
-    # ----------------------------------------------------
-    - name: Auditoría Forense para Linux
-      when: ansible_connection != 'winrm'
-      block:
-        - name: 1. Obtener sesión SSH activa
-          shell: "who | tail -n 1"
-          register: ssh_session
-          ignore_errors: true
+    - name: Auditar puertos, accesos y configuración
+      ansible.builtin.shell: |
+        # Filtro: separa accesos humanos de los que vienen de redes Docker (panel Ansible)
+        cat > /tmp/filtro_ip.py <<'EOF'
+        import sys, re, ipaddress
+        redes = [ipaddress.ip_network(s) for s in sys.argv[1:] if s]
+        panel = 0
+        for linea in sys.stdin:
+            linea = linea.rstrip('\n')
+            m = re.search(r'\b(\d{1,3}(?:\.\d{1,3}){3})\b', linea)
+            if m and any(ipaddress.ip_address(m.group(1)) in r for r in redes):
+                panel += 1
+            else:
+                print(linea)
+        print('#panel ' + str(panel))
+        EOF
 
-        - name: 2. Obtener IP real del cliente SSH activo
-          shell: >
-            ss -tnp | grep sshd | grep -v '172\.' | grep -v '127\.' | awk '{print $5}' | cut -d: -f1 | head -n 1
-          register: active_ssh_ip
-          ignore_errors: true
+        subnets=$(docker network inspect $(docker network ls -q) -f '{% raw %}{{range .IPAM.Config}}{{.Subnet}} {{end}}{% endraw %}' 2>/dev/null)
 
-        - name: 3. Extraer IP remota del cliente
-          shell: >
-            echo '{{ active_ssh_ip.stdout }}' | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' || echo '192.168.233.1'
-          register: remote_ip
+        mostrar() {
+          local salida; salida=$(python3 /tmp/filtro_ip.py $subnets)
+          local n; n=$(echo "$salida" | grep '^#panel' | awk '{print $2}')
+          echo "$salida" | grep -v '^#panel'
+          [ "${n:-0}" -gt 0 ] && echo "   (se omitieron ${n} conexiones internas del panel Ansible)"
+          return 0
+        }
 
-        - name: 4. Comprobar e interpretar intentos fallidos SSH
-          shell: >
-            journalctl _SYSTEMD_UNIT=sshd.service | grep 'Failed password' | tail -n 3 | awk '{print "• Intento el " $1 " " $2 " a las " $3 " desde la IP: " $(NF-3)}' || echo '• Sin intentos fallidos recientes'
-          register: failed_logins
+        echo "Puertos en escucha (22, 5000, 8080, 27017):"
+        ss -tuln | grep -E ':(22|5000|8080|27017)\b' | awk '{print "   • " $1 " " $5}' | sort -u
 
-        - name: 5. Consultar Geolocalización
-          uri:
-            url: "http://ip-api.com/json/{{ remote_ip.stdout }}?fields=status,message,country,regionName,city,isp,org,as,proxy,hosting"
-            method: GET
-            return_content: true
-          register: ip_geo
-          when:
-            - remote_ip.stdout != "127.0.0.1"
-            - not remote_ip.stdout.startswith("192.168.")
-            - not remote_ip.stdout.startswith("10.")
-            - not remote_ip.stdout.startswith("172.")
-          ignore_errors: true
+        if ss -tln | grep -E '0\.0\.0\.0:27017|\[::\]:27017|\*:27017' >/dev/null; then
+          echo "[AVISO] MongoDB (27017) está publicado a toda la red y sin autenticación"
+        else
+          echo "[OK] MongoDB (27017) no está expuesto a la red"
+        fi
 
-        - name: 6. Mostrar reporte Linux
-          debug:
-            msg:
-              - "====== 🕵️ AUDITORÍA FORENSE DE IDENTIDAD Y RED (LINUX) ======"
-              - "👤 USUARIO CONECTADO: {{ ssh_session.stdout.split()[0] if ssh_session.stdout else 'root' }}"
-              - "💻 IDENTIFICADOR / TTY: {{ ssh_session.stdout.split()[1] if ssh_session.stdout else 'pts/1' }}"
-              - "🌐 DIRECCIÓN IP ORIGEN: {{ remote_ip.stdout }}"
-              - "--------------------------------------------------"
-              - "📍 UBICACIÓN Y RED: {{ (ip_geo.json.country if ip_geo is defined and ip_geo.json is defined) | default('Red Local / Privada (LAN)') }}"
-              - "🏢 PROVEEDOR / ISP: {{ (ip_geo.json.isp if ip_geo is defined and ip_geo.json is defined) | default('Red Local de Área Virtual (LAN)') }}"
-              - "--------------------------------------------------"
-              - "⚠️ REPORTE DE INTENTOS FALLIDOS SSH:"
-              - "{{ failed_logins.stdout_lines }}"
+        echo "Accesos SSH aceptados (IP real de origen, últimas 24 h):"
+        ok=$(journalctl -u sshd --since "24 hours ago" --no-pager 2>/dev/null | grep "Accepted" \
+          | sed -E 's/^([A-Za-z]+ +[0-9]+ [0-9:]+) .*Accepted ([a-z-]+) for ([^ ]+) from ([^ ]+) port.*/   • \1 | \3 desde \4 (\2)/' | tail -n 15 | mostrar)
+        if [ -n "$ok" ]; then echo "$ok"; else echo "   • sin registros"; fi
 
-    # ----------------------------------------------------
-    # SECCIÓN WINDOWS SERVER 2022
-    # ----------------------------------------------------
-    - name: Auditoría Forense para Windows Server
-      when: ansible_connection == 'winrm'
-      block:
-        - name: 1. Consultar usuarios activos e intentos fallidos de inicio de sesión (Evento 4625)
-          ansible.windows.win_powershell:
-            script: |
-              $failedEvents = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625} -MaxEvents 3 -ErrorAction SilentlyContinue
-              if ($failedEvents) {
-                foreach ($evt in $failedEvents) {
-                  "• Intento fallido el $($evt.TimeCreated.ToString('MMM dd HH:mm:ss')) - Usuario: $($evt.Properties[5].Value)"
-                }
-              } else {
-                "• Sin intentos fallidos de inicio de sesión recientes"
-              }
-          register: win_security_events
+        fallidos=$(journalctl -u sshd --since "24 hours ago" --no-pager 2>/dev/null | grep -c "Failed password")
+        if [ "${fallidos:-0}" -gt 0 ]; then
+          echo "[AVISO] Intentos SSH fallidos en las últimas 24 h: ${fallidos}"
+          echo "   IPs con más intentos fallidos:"
+          journalctl -u sshd --since "24 hours ago" --no-pager 2>/dev/null | grep "Failed password" \
+            | grep -oE 'from [0-9a-fA-F.:]+' | awk '{print $2}' | sort | uniq -c | sort -rn | head -n 5 \
+            | awk '{print "   • " $2 " (" $1 " intentos)"}'
+        else
+          echo "[OK] Intentos SSH fallidos en las últimas 24 h: 0"
+        fi
 
-        - name: 2. Mostrar reporte Windows
-          debug:
-            msg:
-              - "====== 🕵️ AUDITORÍA FORENSE Y EVENTOS (WINDOWS SERVER 2022) ======"
-              - "👤 USUARIO ACTUAL: Administrator (WinRM Remote Session)"
-              - "🌐 CONEXIÓN: Sesión RDP/WinRM Protegida"
-              - "--------------------------------------------------"
-              - "⚠️ REPORTE DE INTENTOS FALLIDOS EN EVENT VIEWER (ID 4625):"
-              - "{{ win_security_events.output }}"
-              - "--------------------------------------------------"
-              - "✅ Registro auditor de eventos de seguridad verificado."
+        prl=$(sshd -T 2>/dev/null | awk '/^permitrootlogin/ {print $2}')
+        if [ "$prl" = "yes" ]; then
+          echo "[AVISO] PermitRootLogin: yes (el acceso directo de root por contraseña está permitido)"
+        else
+          echo "[OK] PermitRootLogin: ${prl:-desconocido}"
+        fi
+
+        if systemctl is-active --quiet firewalld; then
+          echo "[OK] Firewall activo"
+          echo "   • Servicios permitidos: $(firewall-cmd --list-services 2>/dev/null)"
+          p=$(firewall-cmd --list-ports 2>/dev/null)
+          echo "   • Puertos abiertos: ${p:-ninguno adicional}"
+        else
+          echo "[AVISO] Firewall (firewalld) inactivo"
+        fi
+
+        echo "Últimas sesiones humanas en el servidor:"
+        s=$(last -n 40 -w 2>/dev/null | grep -Ev '^(reboot|wtmp|$)' | head -n 40 | mostrar | head -n 6 | sed 's/^/   • /')
+        if [ -n "$s" ]; then echo "$s"; else echo "   • sin sesiones"; fi
+
+        echo "Acciones ejecutadas desde el panel:"
+        a=$(docker exec mongodb_itsm mongo itsm_db --quiet --eval 'db.panel_accesos.find().sort({_id:-1}).limit(10).forEach(function(d){print("   • " + d.fecha + " | " + d.ip + " | " + d.accion + " | " + d.estado)})' 2>/dev/null)
+        if [ -n "$a" ]; then echo "$a"; else echo "   • sin registros todavía"; fi
+
+        echo "Últimos eventos del kernel:"
+        dmesg 2>/dev/null | tail -n 5 | sed 's/^/   • /' || true
+
+        rm -f /tmp/filtro_ip.py
+      args:
+        executable: /bin/bash
+      register: auditoria
+      changed_when: false
+
+    - name: Reporte de auditoría
+      ansible.builtin.debug:
+        msg: "{{ auditoria.stdout_lines }}"

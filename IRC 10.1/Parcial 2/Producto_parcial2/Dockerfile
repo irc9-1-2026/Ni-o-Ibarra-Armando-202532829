@@ -1,23 +1,22 @@
 FROM python:3.12-slim
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssh-client sshpass && \
-    rm -rf /var/lib/apt/lists/*
+# Dependencias esenciales: ansible y cliente SSH
+RUN apt-get update && apt-get install -y \
+    ansible \
+    openssh-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir flask pymongo
 
-COPY ansible.cfg inventory.ini ./
-COPY app/ ./app/
-COPY entrypoint.sh /entrypoint.sh
+COPY . /app
 
-RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
-
-ENV ANSIBLE_CONFIG=/app/ansible.cfg
+# Quita saltos de línea de Windows y deja ejecutable el entrypoint (instala la llave SSH)
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 EXPOSE 5000
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]
 CMD ["python", "app/app.py"]

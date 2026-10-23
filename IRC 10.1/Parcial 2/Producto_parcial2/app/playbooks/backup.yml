@@ -1,71 +1,33 @@
 ---
-- name: Respaldo de Seguridad Express Multiplataforma
-  hosts: "{{ target_host | default('all') }}"
-  gather_facts: false
+- name: Respaldo de la base de datos del portal (MongoDB) en Rocky2
+  hosts: "{{ target_host | default('Rocky2') }}"
+  gather_facts: no
+  vars:
+    backup_dir: /root/backups
   tasks:
-    # ----------------------------------------------------
-    # SECCIÓN LINUX (Rocky, Kali, etc.)
-    # ----------------------------------------------------
-    - name: Tareas de Respaldo para Linux
-      when: ansible_connection != 'winrm'
-      block:
-        - name: 1. Crear directorio para respaldos si no existe
-          file:
-            path: /var/backups/ansible_express
-            state: directory
-            mode: '0755'
+    - name: Crear directorio de respaldos
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0700'
 
-        - name: 2. Limpiar respaldos anteriores
-          shell: "rm -rf /var/backups/ansible_express/*"
+    - name: Generar respaldo con mongodump
+      ansible.builtin.shell: |
+        set -e
+        f="{{ backup_dir }}/itsm_db_$(date +%Y%m%d_%H%M%S).archive.gz"
+        docker exec mongodb_itsm mongodump --db itsm_db --archive --gzip > "$f"
+        test -s "$f"
+        chmod 600 "$f"
+        echo "[OK] Respaldo creado: $f"
+        echo "Tamaño: $(du -h "$f" | cut -f1)"
+        echo "[OK] Verificación: el archivo no está vacío"
+        ls -1t {{ backup_dir }}/itsm_db_*.archive.gz | tail -n +11 | xargs -r rm -f
+        echo "Respaldos conservados: $(ls -1 {{ backup_dir }}/itsm_db_*.archive.gz | wc -l) (máximo 10)"
+        echo "Ubicación en Rocky2: {{ backup_dir }}"
+      args:
+        executable: /bin/bash
+      register: respaldo
 
-        - name: 3. Obtener timestamp
-          command: date "+%Y-%m-%d_%H-%M-%S"
-          register: timestamp_linux
-
-        - name: 4. Generar paquete comprimido .tar.gz
-          shell: >
-            tar -czf /var/backups/ansible_express/backup_rocky_{{ timestamp_linux.stdout }}.tar.gz
-            /etc/hosts
-            /etc/resolv.conf
-            /var/log/dnf.log
-
-        - name: 5. Confirmar respaldo Linux
-          debug:
-            msg:
-              - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (LINUX) ======"
-              - "Servidor: {{ inventory_hostname }}"
-              - "Archivo generado: /var/backups/ansible_express/backup_rocky_{{ timestamp_linux.stdout }}.tar.gz"
-              - "FECHA Y HORA REGISTRADA: {{ timestamp_linux.stdout }}"
-
-    # ----------------------------------------------------
-    # SECCIÓN WINDOWS SERVER 2022
-    # ----------------------------------------------------
-    - name: Tareas de Respaldo para Windows Server
-      when: ansible_connection == 'winrm'
-      block:
-        - name: 1. Crear directorio C:\Backups\AnsibleExpress y comprimir logs/configuraciones
-          ansible.windows.win_powershell:
-            script: |
-              $backupDir = "C:\Backups\AnsibleExpress"
-              if (-not (Test-Path $backupDir)) { New-Item -Path $backupDir -ItemType Directory | Out-Null }
-              Remove-Item -Path "$backupDir\*" -Recurse -Force -ErrorAction SilentlyContinue
-
-              $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-              $zipFile = "$backupDir\backup_win_$timestamp.zip"
-
-              $filesToBackup = @(
-                "$env:SystemRoot\System32\drivers\etc\hosts",
-                "$env:SystemRoot\win.ini"
-              )
-
-              Compress-Archive -Path $filesToBackup -DestinationPath $zipFile -Force
-              "$zipFile|$timestamp"
-          register: backup_win_res
-
-        - name: 2. Confirmar respaldo Windows
-          debug:
-            msg:
-              - "====== 📦 BACKUP COMPLETADO EXITOSAMENTE (WINDOWS SERVER 2022) ======"
-              - "Servidor: {{ inventory_hostname }}"
-              - "Ruta de archivo: C:\\Backups\\AnsibleExpress"
-              - "Estado: Archivo ZIP de seguridad generado con éxito."
+    - name: Reporte del respaldo
+      ansible.builtin.debug:
+        msg: "{{ respaldo.stdout_lines }}"

@@ -1,0 +1,247 @@
+---
+- name: Administración y Clasificación de Usuarios y Tickets en MongoDB
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+    # --- LISTAR TICKETS ---
+    - name: Consultar clasificación de tickets en MongoDB
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        from pymongo import MongoClient
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        for t in db.tickets.find():
+            usuario = t.get('usuario', {})
+            print('ID: {} | Usuario: {} ({}) | Tipo: {} | Prioridad: {} | Estado: {}'.format(
+                t.get('_id'),
+                usuario.get('username'),
+                usuario.get('puesto'),
+                t.get('tipo_ticket'),
+                t.get('prioridad'),
+                t.get('estado')))
+        PY
+      register: tickets_out
+      tags: [listar_tickets]
+
+    - name: Mostrar reporte de tickets
+      ansible.builtin.debug:
+        msg: "{{ tickets_out.stdout_lines }}"
+      tags: [listar_tickets]
+
+    # --- RESOLVER TICKET (guarda la fecha de resolución para las métricas) ---
+    - name: Marcar ticket como RESUELTO
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys, datetime
+        from pymongo import MongoClient
+        from bson.objectid import ObjectId
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        oid = ObjectId(os.environ['TICKET_ID'].strip())
+        t = db.tickets.find_one({'_id': oid})
+        if not t:
+            print('ERROR: no existe un ticket con ese ID')
+            sys.exit(1)
+        if t.get('estado') == 'RESUELTO':
+            print('El ticket ya estaba resuelto; no se modificó')
+            sys.exit(0)
+        db.tickets.update_one(
+            {'_id': oid},
+            {'$set': {'estado': 'RESUELTO',
+                      'fecha_resolucion': datetime.datetime.now(datetime.timezone.utc)}})
+        print('TICKET RESUELTO CORRECTAMENTE')
+        PY
+      environment:
+        TICKET_ID: "{{ ticket_id }}"
+      when: ticket_id is defined and ticket_id != ''
+      register: resolve_out
+      tags: [resolver_ticket]
+
+    - name: Confirmación de cambio de estatus
+      ansible.builtin.debug:
+        msg: "[OK] {{ resolve_out.stdout }}. Ticket {{ ticket_id }}."
+      when: ticket_id is defined and ticket_id != ''
+      tags: [resolver_ticket]
+
+    # --- LISTAR USUARIOS ---
+    - name: Listar usuarios y prioridades
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        from pymongo import MongoClient
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        for u in db.users.find():
+            print('Usuario: {} | Puesto: {} | Prioridad: {} | Estado: {}'.format(
+                u.get('username'),
+                u.get('puesto'),
+                u.get('prioridad_base'),
+                u.get('status')))
+        PY
+      register: users_out
+      tags: [listar_usuarios]
+
+    - name: Mostrar usuarios
+      ansible.builtin.debug:
+        msg: "{{ users_out.stdout_lines }}"
+      tags: [listar_usuarios]
+
+    # --- CREAR USUARIO ---
+    - name: Crear usuario del portal
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, re, sys
+        from pymongo import MongoClient
+        PRIORIDADES = {'Director': 'CRÍTICA', 'Gerente': 'ALTA', 'Supervisor': 'MEDIA', 'Empleado': 'BAJA'}
+        nombre = os.environ['U_NAME'].strip()
+        clave = os.environ['U_PASS']
+        puesto = os.environ['U_PUESTO'].strip() or 'Empleado'
+        if not re.fullmatch(r'[A-Za-z0-9_.-]{3,30}', nombre):
+            print('ERROR: el usuario debe tener de 3 a 30 caracteres (letras, números, punto, guion o guion bajo)')
+            sys.exit(1)
+        if not clave.strip():
+            print('ERROR: la contraseña no puede estar vacía')
+            sys.exit(1)
+        if puesto not in PRIORIDADES:
+            print('ERROR: puesto no válido')
+            sys.exit(1)
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        if db.users.find_one({'username': nombre}):
+            print('ERROR: el usuario ' + nombre + ' ya existe')
+            sys.exit(1)
+        db.users.insert_one({
+            'username': nombre,
+            'password': clave.strip(),
+            'puesto': puesto,
+            'prioridad_base': PRIORIDADES[puesto],
+            'status': 'ACTIVE',
+            'rol': 'USUARIO'})
+        print('USUARIO CREADO: ' + nombre + ' (' + puesto + ')')
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+        U_PASS: "{{ nueva_password | default('') }}"
+        U_PUESTO: "{{ nuevo_puesto | default('Empleado') }}"
+      when: user_name is defined and user_name != ''
+      register: crear_out
+      tags: [crear_usuario]
+
+    - name: Resultado de crear usuario
+      ansible.builtin.debug:
+        msg: "[OK] {{ crear_out.stdout }}"
+      when: crear_out is defined and crear_out.stdout is defined
+      tags: [crear_usuario]
+
+    # --- ELIMINAR USUARIO (opcionalmente también sus tickets) ---
+    - name: Eliminar usuario del portal
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys
+        from pymongo import MongoClient
+        nombre = os.environ['U_NAME'].strip()
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        if not db.users.find_one({'username': nombre}):
+            print('ERROR: el usuario ' + nombre + ' no existe')
+            sys.exit(1)
+        db.users.delete_one({'username': nombre})
+        if os.environ.get('BORRAR_TICKETS') == 'si':
+            n = db.tickets.delete_many({'usuario.username': nombre}).deleted_count
+            print('USUARIO ELIMINADO: ' + nombre + ' (y {} tickets)'.format(n))
+        else:
+            print('USUARIO ELIMINADO: ' + nombre + ' (sus tickets se conservaron)')
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+        BORRAR_TICKETS: "{{ 'si' if (borrar_tickets | default(false) | bool) else 'no' }}"
+      when: user_name is defined and user_name != ''
+      register: eliminar_out
+      tags: [eliminar_usuario]
+
+    - name: Resultado de eliminar usuario
+      ansible.builtin.debug:
+        msg: "[AVISO] {{ eliminar_out.stdout }}"
+      when: eliminar_out is defined and eliminar_out.stdout is defined
+      tags: [eliminar_usuario]
+
+    # --- CAMBIAR PUESTO (recalcula la prioridad base y actualiza sus tickets pendientes) ---
+    - name: Reclasificar puesto de un usuario
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys
+        from pymongo import MongoClient
+        PRIORIDADES = {'Director': 'CRÍTICA', 'Gerente': 'ALTA', 'Supervisor': 'MEDIA', 'Empleado': 'BAJA'}
+        nombre = os.environ['U_NAME'].strip()
+        puesto = os.environ['U_PUESTO'].strip()
+        if puesto not in PRIORIDADES:
+            print('ERROR: puesto no válido')
+            sys.exit(1)
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        r = db.users.update_one(
+            {'username': nombre},
+            {'$set': {'puesto': puesto, 'prioridad_base': PRIORIDADES[puesto]}})
+        if r.matched_count == 0:
+            print('ERROR: usuario no encontrado')
+            sys.exit(1)
+        n = db.tickets.update_many(
+            {'usuario.username': nombre, 'estado': 'PENDIENTE'},
+            {'$set': {'usuario.puesto': puesto}}).modified_count
+        print('PUESTO ACTUALIZADO: ' + nombre + ' ahora es ' + puesto + ' ({} tickets pendientes actualizados)'.format(n))
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+        U_PUESTO: "{{ nuevo_puesto | default('') }}"
+      when: user_name is defined and user_name != ''
+      register: puesto_out
+      tags: [clasificar_usuario]
+
+    - name: Resultado de cambio de puesto
+      ansible.builtin.debug:
+        msg: "[OK] {{ puesto_out.stdout }}"
+      when: puesto_out is defined and puesto_out.stdout is defined
+      tags: [clasificar_usuario]
+
+    # --- BLOQUEAR / DESBLOQUEAR ---
+    - name: Bloquear cuenta de usuario
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys
+        from pymongo import MongoClient
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        r = db.users.update_one({'username': os.environ['U_NAME']}, {'$set': {'status': 'LOCKED'}})
+        if r.matched_count == 0:
+            print('ERROR: usuario no encontrado')
+            sys.exit(1)
+        print('USUARIO BLOQUEADO: ' + os.environ['U_NAME'])
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+      when: user_name is defined and user_name != ''
+      register: bloquear_out
+      tags: [bloquear_usuario]
+
+    - name: Resultado de bloquear usuario
+      ansible.builtin.debug:
+        msg: "[AVISO] {{ bloquear_out.stdout }}"
+      when: bloquear_out is defined and bloquear_out.stdout is defined
+      tags: [bloquear_usuario]
+
+    - name: Desbloquear cuenta de usuario
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys
+        from pymongo import MongoClient
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        r = db.users.update_one({'username': os.environ['U_NAME']}, {'$set': {'status': 'ACTIVE'}})
+        if r.matched_count == 0:
+            print('ERROR: usuario no encontrado')
+            sys.exit(1)
+        print('USUARIO DESBLOQUEADO: ' + os.environ['U_NAME'])
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+      when: user_name is defined and user_name != ''
+      register: desbloquear_out
+      tags: [desbloquear_usuario]
+
+    - name: Resultado de desbloquear usuario
+      ansible.builtin.debug:
+        msg: "[OK] {{ desbloquear_out.stdout }}"
+      when: desbloquear_out is defined and desbloquear_out.stdout is defined
+      tags: [desbloquear_usuario]
