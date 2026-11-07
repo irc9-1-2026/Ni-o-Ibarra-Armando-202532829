@@ -1,0 +1,54 @@
+# Plataforma Web ITSM y Automatizacion
+
+Plataforma de Gestion de Servicios de TI (ITSM) y Automatizacion de Infraestructura desarrollada con Flask, MongoDB, Ansible Engine y Docker.
+
+---
+
+## Requisitos Previos
+
+* Docker Engine (v20.10 o superior)
+* Docker Compose (v2.0 o superior)
+
+---
+
+## Instrucciones de Despliegue
+
+Siga los siguientes pasos en la terminal dentro del directorio raiz del proyecto:
+
+1. Asignar permisos de ejecucion al script de arranque:
+   chmod +x entrypoint.sh
+
+2. Ajustar permisos a la llave privada SSH:
+   chmod 600 keys/id_rsa
+
+3. Construir e iniciar los contenedores en segundo plano:
+   docker-compose up --build -d
+
+4. Verificar el estado de los contenedores:
+   docker-compose ps
+
+---
+
+## Puertos y Servicios Accesibles
+
+* Panel de Administracion y Automatizacion (Flask Admin):
+  http://localhost:5000
+
+* Portal de Atencion a Usuarios e Ingenieros (ITSM):
+  http://localhost:8080
+
+---
+
+## Comandos de Mantenimiento
+
+* Visualizar logs en tiempo real:
+  docker-compose logs -f
+
+* Detener los servicios:
+  docker-compose stop
+
+* Detener y remover contenedores:
+  docker-compose down
+
+* Reiniciar los servicios:
+  docker-compose restart
