@@ -2,3 +2,6 @@
 *.env
 Practica1_microservicios/k8s/01-config.yaml
 logs/
+keys/
+keys/*
+*.pub
