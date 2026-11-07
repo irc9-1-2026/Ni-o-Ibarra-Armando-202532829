@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IT Operations & ITSM Dashboard</title>
 
-  <!-- Bootstrap 5.3 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -44,13 +41,14 @@
 
     .text-muted { color: var(--text-muted) !important; }
     .text-primary { color: var(--sky) !important; }
-
-    /* ===== Colores de estado en las letras ===== */
     .text-ok   { color: var(--estado-ok) !important; }
     .text-warn { color: var(--estado-warn) !important; }
     .text-err  { color: var(--estado-err) !important; }
 
-    /* ===== Botones: azul cielo ===== */
+    .icono-img { width: 18px; height: 18px; object-fit: contain; vertical-align: -3px; margin-right: 6px; }
+    .icono-usuario { border-radius: 50%; object-fit: cover; }
+
+    /* ===== Botones ===== */
     .btn-primary, .btn-success, .btn-info {
       --bs-btn-color: var(--sky-ink);
       --bs-btn-bg: var(--sky);
@@ -61,6 +59,9 @@
       --bs-btn-active-color: var(--sky-ink);
       --bs-btn-active-bg: var(--sky-hover);
       --bs-btn-active-border-color: var(--sky-hover);
+      --bs-btn-disabled-color: var(--sky-ink);
+      --bs-btn-disabled-bg: var(--sky);
+      --bs-btn-disabled-border-color: var(--sky);
       font-weight: 600;
     }
     .btn-warning {
@@ -131,26 +132,11 @@
       margin-bottom: 8px;
       cursor: pointer;
     }
-
-    .sidebar .nav-link-custom:hover {
-      background: var(--bg-soft-hover);
-      color: #ffffff;
-    }
-
-    .sidebar .nav-link-custom.active {
-      background: var(--sky);
-      color: var(--sky-ink);
-      font-weight: 700;
-    }
-
+    .sidebar .nav-link-custom:hover { background: var(--bg-soft-hover); color: #ffffff; }
+    .sidebar .nav-link-custom.active { background: var(--sky); color: var(--sky-ink); font-weight: 700; }
     .sidebar .nav-link-custom i { font-size: 1.2rem; }
 
-    .main-wrapper {
-      margin-left: 240px;
-      flex: 1;
-      padding: 24px 40px;
-      min-width: 0;
-    }
+    .main-wrapper { margin-left: 240px; flex: 1; padding: 24px 40px; min-width: 0; }
 
     /* ===== Encabezado: la única línea roja ===== */
     .topbar {
@@ -178,6 +164,8 @@
       box-shadow: 0 0 0 .2rem rgba(56, 189, 248, 0.25);
     }
     .node-select-box::placeholder { color: #8fa3dd; }
+    .node-select-box:disabled { opacity: .55; }
+    .node-select-box[readonly] { opacity: .85; cursor: default; }
 
     /* ===== Bloques sin caja ===== */
     .kpi-card {
@@ -191,16 +179,13 @@
     .kpi-card:hover { background: var(--bg-soft); }
 
     .kpi-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.2rem;
-      background: rgba(56, 189, 248, 0.16);
-      color: var(--sky);
+      width: 40px; height: 40px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; background: rgba(56, 189, 248, 0.16); color: var(--sky);
     }
+
+    .ultima-vez { font-size: 0.78rem; color: #cfe0ff; margin: 0 0 8px; }
+    .ultima-vez i { color: var(--sky); margin-right: 4px; }
 
     .dashboard-panel {
       background: transparent;
@@ -222,7 +207,6 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
-
     .result-badge.sub {
       padding: 4px 16px 4px 32px;
       font-size: 0.82rem;
@@ -230,183 +214,103 @@
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
       background: transparent;
     }
-
-    /* Líneas del reporte coloreadas según su estado */
     .result-badge.ok   { color: var(--estado-ok); }
     .result-badge.warn { color: var(--estado-warn); }
     .result-badge.bad  { color: var(--estado-err); }
 
-    /* La consola conserva su fondo oscuro para distinguirse */
-    .terminal-card {
-      background: var(--bg-deep);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
+    .terminal-card { background: var(--bg-deep); border-radius: 10px; overflow: hidden; }
     .terminal-header {
-      padding: 10px 18px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 10px 18px; border-bottom: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
     }
     .terminal-header .btn { color: #ffffff !important; }
     .terminal-header .btn:hover { color: var(--sky-ink) !important; }
 
     #consoleOutput {
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-      color: #8fe0ff;
-      background: var(--bg-deep);
-      padding: 16px;
-      font-size: 0.85rem;
-      max-height: 240px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      margin: 0;
+      color: #8fe0ff; background: var(--bg-deep); padding: 16px; font-size: 0.85rem;
+      max-height: 240px; overflow-y: auto; white-space: pre-wrap; margin: 0;
     }
 
-    .loader-container {
+    .modal-content { background-color: #08256f; border: 1px solid var(--border-color); border-radius: 12px; }
+
+    /* ===== Indicador de proceso (flotante, siempre visible) ===== */
+    .toast-proceso {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 2000;
+      min-width: 260px;
+      max-width: 380px;
       display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 30px 20px;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #08256f;
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--sky);
+      border-radius: 10px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
     }
+    .toast-proceso.visible { display: flex; }
+    .toast-proceso.ok  { border-left-color: var(--estado-ok); }
+    .toast-proceso.err { border-left-color: var(--estado-err); }
 
-    .pulse-spinner {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 3px solid rgba(56, 189, 248, 0.25);
-      border-top-color: var(--sky);
+    .toast-icono { width: 26px; height: 26px; flex: 0 0 26px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; line-height: 1; }
+    .toast-icono.ok  { color: var(--estado-ok); }
+    .toast-icono.err { color: var(--estado-err); }
+    .toast-rueda {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 3px solid rgba(56, 189, 248, 0.25); border-top-color: var(--sky);
       animation: spin 0.8s linear infinite;
     }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    .toast-titulo { font-weight: 700; font-size: 0.95rem; }
+    .toast-detalle { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; word-break: break-word; }
+    .toast-cerrar { margin-left: auto; background: none; border: none; color: var(--text-muted); font-size: 1.1rem; line-height: 1; padding: 0 0 0 8px; cursor: pointer; }
+    .toast-cerrar:hover { color: #ffffff; }
 
-    .loader-text {
-      margin-top: 14px;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-
-    .modal-content {
-      background-color: #08256f;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-    }
-
-    /* ===== Tablero: columnas planas, tickets separados por líneas finas ===== */
-    .board-col {
-      background: var(--bg-soft);
-      border: none;
-      border-radius: 10px;
-      padding: 14px 16px;
-      height: 100%;
-      min-height: 180px;
-    }
-
+    /* ===== Tablero ===== */
+    .board-col { background: var(--bg-soft); border: none; border-radius: 10px; padding: 14px 16px; height: 100%; min-height: 180px; }
     .board-col-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid var(--col-color, #64748b);
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; padding-bottom: 10px; border-bottom: 2px solid var(--col-color, #64748b);
     }
-
-    .board-col-title {
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: var(--col-color, #ffffff);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .board-count {
-      background: var(--col-color, #64748b);
-      color: #031040;
-      font-weight: 700;
-      font-size: 0.8rem;
-      border-radius: 20px;
-      padding: 1px 10px;
-    }
-
-    .board-type-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin: 16px 0 4px;
-    }
+    .board-col-title { font-weight: 700; font-size: 0.95rem; color: var(--col-color, #ffffff); display: flex; align-items: center; gap: 8px; }
+    .board-count { background: var(--col-color, #64748b); color: #031040; font-weight: 700; font-size: 0.8rem; border-radius: 20px; padding: 1px 10px; }
+    .board-type-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin: 16px 0 4px; }
 
     .ticket-card {
-      background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--border-color);
-      border-radius: 0;
-      padding: 10px 2px;
-      margin: 0;
-      font-size: 0.85rem;
+      background: transparent; border: none; border-bottom: 1px solid var(--border-color);
+      border-radius: 0; padding: 10px 2px; margin: 0; font-size: 0.85rem;
     }
     .ticket-card:last-child { border-bottom: none; }
     .ticket-card:hover { background: var(--bg-soft); }
-
     .ticket-meta { color: var(--text-muted); font-size: 0.78rem; }
+    .select-idc { padding: 3px 8px; font-size: 0.78rem; }
+    .board-empty { text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 24px 0; }
 
-    .ticket-id {
-      font-family: 'SFMono-Regular', Consolas, monospace;
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-
-    .ticket-id:hover { color: var(--sky); }
-
-    .board-empty {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      padding: 24px 0;
-    }
+    /* Tablero más grande y buscador compacto */
+    .buscador-ticket { max-width: 640px; }
+    .buscador-ticket .form-control { padding: 5px 10px; font-size: 0.85rem; }
+    .board-grande .board-col { padding: 18px 20px; min-height: 460px; }
+    .board-grande .board-col-title { font-size: 1.05rem; }
+    .board-grande .ticket-card { font-size: 0.95rem; padding: 14px 6px; }
+    .board-grande .ticket-meta { font-size: 0.84rem; }
+    .num-ticket { font-weight: 700; color: var(--sky); font-size: 1rem; }
 
     /* ===== Telemetría ===== */
     .metric-label { color: var(--text-muted); font-size: 0.8rem; }
     .metric-value { font-size: 1.7rem; font-weight: 700; line-height: 1.2; margin-top: 6px; }
     .metric-sub   { color: var(--text-muted); font-size: 0.72rem; margin-top: 4px; min-height: 1em; }
-
     .chart-box { position: relative; height: 280px; }
     .chart-box.corta { height: 230px; }
+    .tipo-top { background: rgba(255, 210, 63, 0.10); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; font-size: 0.88rem; }
 
-    .tipo-top {
-      background: rgba(255, 210, 63, 0.10);
-      border-radius: 6px;
-      padding: 10px 14px;
-      margin-bottom: 12px;
-      font-size: 0.88rem;
-    }
-
-    .live-dot {
-      display: inline-block;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--estado-ok);
-      margin-right: 6px;
-      animation: pulso 1.6s ease-in-out infinite;
-    }
-
+    .live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--estado-ok); margin-right: 6px; animation: pulso 1.6s ease-in-out infinite; }
     .live-dot.off { background: var(--estado-err); animation: none; }
-
-    @keyframes pulso {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.25; }
-    }
+    @keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
     .tabla-metricas { width: 100%; font-size: 0.86rem; }
     .tabla-metricas th { color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 6px; border-bottom: 2px solid var(--line-blue); }
@@ -414,12 +318,30 @@
     .tabla-metricas tr:last-child td { border-bottom: none; }
     .punto-prio { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 
-    /* ===== Gestión de usuarios ===== */
     .select-puesto { min-width: 130px; padding: 4px 10px; font-size: 0.82rem; }
     .tabla-scroll { overflow-x: auto; }
+    .tabla-resueltos td { vertical-align: top; max-width: 260px; word-break: break-word; }
+    .id-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 0.74rem; color: var(--text-muted); }
+    .chip-rol { display: inline-block; border-radius: 20px; padding: 1px 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid var(--sky); color: var(--sky); }
+    .chip-rol.idc { background: var(--sky); color: var(--sky-ink); }
+
+    /* ===== Historial de ejecuciones ===== */
+    .tabla-logs td { white-space: nowrap; }
+    .tabla-logs td.detalle { white-space: normal; word-break: break-word; }
+    .tabla-logs .estado { font-weight: 700; }
   </style>
 </head>
 <body>
+
+  <!-- Indicador de proceso: rueda mientras corre, "Hecho" o "Falló" al terminar -->
+  <div id="toastProceso" class="toast-proceso" role="status" aria-live="polite">
+    <div id="toastIcono" class="toast-icono"><div class="toast-rueda"></div></div>
+    <div>
+      <div id="toastTitulo" class="toast-titulo">Procesando...</div>
+      <div id="toastDetalle" class="toast-detalle"></div>
+    </div>
+    <button type="button" class="toast-cerrar" onclick="ocultarToast()" aria-label="Cerrar">&times;</button>
+  </div>
 
   <aside class="sidebar">
     <div class="sidebar-brand">
@@ -444,10 +366,16 @@
         <i class="bi bi-graph-up-arrow"></i>
         <span>4. Estadisticas en tiempo real</span>
       </a>
+      <a class="nav-link-custom" id="btn-sec-logs" onclick="cambiarSeccion('sec-logs')">
+        <i class="bi bi-journal-text"></i>
+        <span>5. Historial de ejecuciones</span>
+      </a>
     </nav>
 
     <form method="post" action="/logout" class="mt-auto">
-      <div class="small text-muted mb-2"><i class="bi bi-person-circle me-1"></i>Sesión: administrador</div>
+      <div class="small text-muted mb-2">
+        <img src="/static/img/usuario.png" alt="" class="icono-img icono-usuario">Sesión: administrador
+      </div>
       <button type="submit" class="btn btn-outline-info btn-sm w-100">
         <i class="bi bi-box-arrow-right me-1"></i> Cerrar sesión
       </button>
@@ -462,7 +390,7 @@
       </div>
     </header>
 
-    <!-- SECCIÓN 1: Salud del Portal -->
+    <!-- SECCIÓN 1 -->
     <div id="sec-audit" class="seccion-contenido">
       <section class="row g-3 mb-4">
         <div class="col-12 col-sm-6 col-xl-3">
@@ -475,9 +403,10 @@
               <h6 class="fw-bold mb-1">Prueba de Conexión</h6>
               <p class="text-muted small mb-3">Verifica la conexión SSH a Rocky2 y el estado de los servicios del portal.</p>
             </div>
-            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('conexion.yml', 'Prueba de Conexión')">
-              Ejecutar Prueba
-            </button>
+            <div>
+              <p class="ultima-vez"><i class="bi bi-clock-history"></i><span data-ultima="conexion.yml">Última vez ejecutado: cargando...</span></p>
+              <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('conexion.yml', 'Prueba de Conexión')">Ejecutar Prueba</button>
+            </div>
           </div>
         </div>
 
@@ -491,9 +420,10 @@
               <h6 class="fw-bold mb-1">Salud del Sistema</h6>
               <p class="text-muted small mb-3">CPU, RAM y disco de Rocky2, más contenedores, base de datos y portal.</p>
             </div>
-            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('diagnostico.yml', 'Salud del Sistema')">
-              Analizar Salud
-            </button>
+            <div>
+              <p class="ultima-vez"><i class="bi bi-clock-history"></i><span data-ultima="diagnostico.yml">Última vez ejecutado: cargando...</span></p>
+              <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('diagnostico.yml', 'Salud del Sistema')">Analizar Salud</button>
+            </div>
           </div>
         </div>
 
@@ -507,9 +437,10 @@
               <h6 class="fw-bold mb-1">Auditoría de Seguridad</h6>
               <p class="text-muted small mb-3">Puertos expuestos, accesos SSH con su IP de origen y configuración del servidor.</p>
             </div>
-            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('auditoria_forense.yml', 'Auditoría de Seguridad')">
-              Iniciar Auditoría
-            </button>
+            <div>
+              <p class="ultima-vez"><i class="bi bi-clock-history"></i><span data-ultima="auditoria_forense.yml">Última vez ejecutado: cargando...</span></p>
+              <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('auditoria_forense.yml', 'Auditoría de Seguridad')">Iniciar Auditoría</button>
+            </div>
           </div>
         </div>
 
@@ -523,45 +454,42 @@
               <h6 class="fw-bold mb-1">Copia de Seguridad</h6>
               <p class="text-muted small mb-3">Exporta la base MongoDB (usuarios y tickets) a un archivo comprimido en Rocky2.</p>
             </div>
-            <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('backup.yml', 'Copia de Seguridad')">
-              Crear Respaldo
-            </button>
+            <div>
+              <p class="ultima-vez"><i class="bi bi-clock-history"></i><span data-ultima="backup.yml">Última vez ejecutado: cargando...</span></p>
+              <button class="btn btn-primary btn-sm w-100 py-2" onclick="solicitarConfirmacion('backup.yml', 'Copia de Seguridad')">Crear Respaldo</button>
+            </div>
           </div>
         </div>
       </section>
     </div>
 
-    <!-- SECCIÓN 2: GESTIÓN DE TICKETS -->
+    <!-- SECCIÓN 2: TICKETS -->
     <div id="sec-admin" class="seccion-contenido" style="display: none;">
-      <section class="row g-3 mb-4">
-        <div class="col-12">
-          <div class="kpi-card" style="border-left: none; padding-left: 0;">
-            <h6 class="fw-bold mb-3"><i class="bi bi-ticket-detailed text-primary me-2"></i>Gestión de Tickets</h6>
-            <div class="row g-3 align-items-end">
-              <div class="col-12 col-md-6">
-                <label class="small text-muted mb-1">ID del Ticket:</label>
-                <input type="text" id="ticketIdInput" class="form-control node-select-box w-100" placeholder="ej. 65342a1b9c8d7e6f5a4b3c2d">
-              </div>
-              <div class="col-12 col-md-6 d-flex gap-2 flex-wrap">
-                <button class="btn btn-outline-info btn-sm flex-fill" onclick="listarTickets()">
-                  <i class="bi bi-kanban me-1"></i> Listar Tickets
-                </button>
-                <button class="btn btn-success btn-sm flex-fill" onclick="resolverTicket(document.getElementById('ticketIdInput').value)">
-                  <i class="bi bi-check-circle me-1"></i> Resolver Ticket
-                </button>
-              </div>
-            </div>
-          </div>
+      <form id="formBuscar" class="buscador-ticket d-flex align-items-end gap-2 flex-wrap mb-3">
+        <div class="flex-grow-1" style="min-width: 200px;">
+          <label class="small text-muted mb-1" for="ticketBuscarInput">Número de ticket o usuario:</label>
+          <input type="text" id="ticketBuscarInput" class="form-control node-select-box w-100" placeholder="ej. 12 o juan_perez" autocomplete="off">
         </div>
-      </section>
+        <button type="submit" class="btn btn-outline-info btn-sm">
+          <i class="bi bi-search me-1"></i> Buscar ticket
+        </button>
+        <button type="button" class="btn btn-success btn-sm" onclick="cerrarTicket()">
+          <i class="bi bi-check-circle me-1"></i> Cerrar ticket
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnLimpiarBusqueda" style="display:none;" onclick="limpiarBusqueda()">
+          Limpiar
+        </button>
+      </form>
 
-      <!-- Tablero de tickets por prioridad -->
-      <section class="dashboard-panel" id="boardSection">
+      <section class="dashboard-panel board-grande" id="boardSection">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-bold mb-0"><i class="bi bi-kanban text-primary me-2"></i>Tablero de Tickets Pendientes</h5>
-          <button class="btn btn-outline-secondary btn-sm" onclick="cargarTablero()">
-            <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
-          </button>
+          <div class="d-flex align-items-center gap-3">
+            <span class="small text-muted" id="avisoBusqueda"></span>
+            <button class="btn btn-outline-secondary btn-sm" onclick="cargarTablero()">
+              <img src="/static/img/actualizar.png" alt="" class="icono-img">Actualizar
+            </button>
+          </div>
         </div>
         <div id="boardContainer" class="row g-3">
           <div class="board-empty w-100">Cargando tickets...</div>
@@ -569,7 +497,7 @@
       </section>
     </div>
 
-    <!-- SECCIÓN 3: GESTIÓN DE USUARIOS DEL PORTAL -->
+    <!-- SECCIÓN 3: USUARIOS -->
     <div id="sec-users" class="seccion-contenido" style="display: none;">
       <section class="row g-3 mb-4">
         <div class="col-12">
@@ -580,11 +508,18 @@
                 <label class="small text-muted mb-1">Nombre de usuario:</label>
                 <input type="text" id="nuevoUsuarioNombre" class="form-control node-select-box w-100" placeholder="ej. juan_perez" autocomplete="off" maxlength="30">
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-2">
                 <label class="small text-muted mb-1">Contraseña:</label>
-                <input type="password" id="nuevoUsuarioClave" class="form-control node-select-box w-100" placeholder="Mínimo 4 caracteres" autocomplete="new-password">
+                <input type="password" id="nuevoUsuarioClave" class="form-control node-select-box w-100" placeholder="Mínimo 4" autocomplete="new-password">
               </div>
-              <div class="col-12 col-md-3">
+              <div class="col-12 col-md-2">
+                <label class="small text-muted mb-1">Tipo de usuario:</label>
+                <select id="nuevoUsuarioRol" class="form-select node-select-box w-100">
+                  <option value="USUARIO" selected>Usuario</option>
+                  <option value="IDC">IDC</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-2">
                 <label class="small text-muted mb-1">Puesto:</label>
                 <select id="nuevoUsuarioPuesto" class="form-select node-select-box w-100">
                   <option value="Empleado" selected>Empleado</option>
@@ -610,12 +545,8 @@
             <span class="badge bg-light text-dark ms-2" id="contadorUsuarios">0</span>
           </h5>
           <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div class="form-check mb-0">
-              <input class="form-check-input" type="checkbox" id="chkBorrarTickets">
-              <label class="form-check-label small text-muted" for="chkBorrarTickets">Al eliminar un usuario, borrar también sus tickets</label>
-            </div>
             <button class="btn btn-outline-secondary btn-sm" onclick="cargarUsuarios()">
-              <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+              <img src="/static/img/actualizar.png" alt="" class="icono-img">Actualizar
             </button>
           </div>
         </div>
@@ -625,6 +556,7 @@
             <thead>
               <tr>
                 <th>Usuario</th>
+                <th>Tipo</th>
                 <th>Puesto</th>
                 <th>Prioridad base</th>
                 <th>Estado</th>
@@ -633,14 +565,15 @@
               </tr>
             </thead>
             <tbody id="tablaUsuarios">
-              <tr><td colspan="6" class="text-muted text-center py-4">Cargando usuarios...</td></tr>
+              <tr><td colspan="7" class="text-muted text-center py-4">Cargando usuarios...</td></tr>
             </tbody>
           </table>
         </div>
+        <p class="small text-muted mt-3 mb-0">En los IDC, la columna de tickets cuenta los tickets que tienen asignados.</p>
       </section>
     </div>
 
-    <!-- SECCIÓN 4: TELEMETRÍA EN TIEMPO REAL -->
+    <!-- SECCIÓN 4: ESTADÍSTICAS -->
     <div id="sec-metrics" class="seccion-contenido" style="display: none;">
 
       <div class="d-flex justify-content-between align-items-center mb-3">
@@ -648,7 +581,6 @@
         <span class="small text-muted">Actualización automática cada 5 s</span>
       </div>
 
-      <!-- Indicadores generales -->
       <section class="row g-3 mb-3">
         <div class="col-6 col-xl-2">
           <div class="kpi-card h-100">
@@ -694,7 +626,6 @@
         </div>
       </section>
 
-      <!-- Indicadores de tiempo -->
       <section class="row g-3 mb-3">
         <div class="col-6 col-xl-3">
           <div class="kpi-card h-100">
@@ -726,7 +657,6 @@
         </div>
       </section>
 
-      <!-- Gráficas -->
       <section class="row g-3 mb-3">
         <div class="col-12 col-xl-8">
           <div class="kpi-card h-100" style="border-left: none; padding-left: 0;">
@@ -769,18 +699,103 @@
           </div>
         </div>
       </section>
+
+      <section class="dashboard-panel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-check2-square text-primary me-2"></i>Tickets resueltos
+            <span class="badge bg-light text-dark ms-2" id="contadorResueltos">0</span>
+          </h5>
+          <a class="btn btn-primary btn-sm" href="/exportar/resueltos.csv">
+            <i class="bi bi-filetype-csv me-1"></i> Exportar CSV
+          </a>
+        </div>
+        <div class="tabla-scroll">
+          <table class="tabla-metricas tabla-resueltos">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha del ticket</th>
+                <th>Tipo de fallo</th>
+                <th>Modalidad</th>
+                <th>Equipo comprometido</th>
+                <th>Problema</th>
+                <th>Resolución</th>
+              </tr>
+            </thead>
+            <tbody id="tablaResueltos">
+              <tr><td colspan="7" class="text-muted text-center py-4">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0" id="notaResueltos"></p>
+      </section>
     </div>
 
-    <!-- Panel de Resultados (oculto hasta que se ejecuta una tarea) -->
+    <!-- SECCIÓN 5: HISTORIAL DE EJECUCIONES -->
+    <div id="sec-logs" class="seccion-contenido" style="display: none;">
+      <section class="dashboard-panel" style="border-top: none; padding-top: 0;">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-journal-text text-primary me-2"></i>Historial de playbooks ejecutados
+            <span class="badge bg-light text-dark ms-2" id="contadorLogs">0</span>
+          </h5>
+          <button class="btn btn-outline-secondary btn-sm" onclick="cargarLogs()">
+            <img src="/static/img/actualizar.png" alt="" class="icono-img">Actualizar
+          </button>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-4">
+            <label class="small text-muted mb-1" for="filtroTipo">Tipo de playbook:</label>
+            <select id="filtroTipo" class="form-select node-select-box w-100">
+              <option value="">Todos los tipos</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="small text-muted mb-1" for="filtroDia">Día de ejecución:</label>
+            <select id="filtroDia" class="form-select node-select-box w-100">
+              <option value="">Todos los días</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="small text-muted mb-1" for="filtroResultado">Resultado:</label>
+            <select id="filtroResultado" class="form-select node-select-box w-100">
+              <option value="">Todos</option>
+              <option value="OK">OK</option>
+              <option value="FALLO">FALLO</option>
+              <option value="TIMEOUT">TIMEOUT</option>
+              <option value="ERROR">ERROR</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tabla-scroll">
+          <table class="tabla-metricas tabla-logs">
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>Tipo</th>
+                <th>Playbook / acción</th>
+                <th>Resultado</th>
+                <th>Duración</th>
+                <th>IP de origen</th>
+              </tr>
+            </thead>
+            <tbody id="tablaLogs">
+              <tr><td colspan="6" class="text-muted text-center py-4">Cargando historial...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small text-muted mt-3 mb-0" id="notaLogs"></p>
+      </section>
+    </div>
+
+    <!-- Panel de Resultados -->
     <section class="dashboard-panel mb-4" id="resultPanel" style="display: none;">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold mb-0" id="summaryTitle">Resultados del Análisis</h5>
         <span id="statusBadge" class="badge bg-secondary px-3 py-2">En espera</span>
-      </div>
-
-      <div id="loaderSpinner" class="loader-container">
-        <div class="pulse-spinner"></div>
-        <div class="loader-text" id="loaderText">Ejecutando tarea...</div>
       </div>
 
       <div id="summaryContent" class="text-muted small">
@@ -790,17 +805,13 @@
       </div>
     </section>
 
-    <!-- Consola Log -->
+    <!-- Consola -->
     <section class="terminal-card">
       <div class="terminal-header">
         <span class="small fw-semibold text-white">Consola de Salida (Ansible Terminal)</span>
         <div class="d-flex gap-2">
-          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="limpiarConsola()">
-            Limpiar
-          </button>
-          <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsole" aria-expanded="true">
-            Ocultar/Mostrar
-          </button>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="limpiarConsola()">Limpiar</button>
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseConsole" aria-expanded="true">Ocultar/Mostrar</button>
         </div>
       </div>
       <div class="collapse show" id="collapseConsole">
@@ -810,7 +821,7 @@
 
   </main>
 
-  <!-- Modal de Confirmación -->
+  <!-- Modal de confirmación -->
   <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -818,12 +829,90 @@
           <h5 class="modal-title fw-bold text-white" id="modalTitle">Confirmar Acción</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body py-4 text-white" id="modalBody">
-          ¿Deseas proceder con esta ejecución?
-        </div>
+        <div class="modal-body py-4 text-white" id="modalBody">¿Deseas proceder con esta ejecución?</div>
         <div class="modal-footer border-light border-opacity-25">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-primary" id="btnEjecutarModal">Confirmar y Ejecutar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: cerrar ticket (muestra la resolución del IDC y permite editarla) -->
+  <div class="modal fade" id="resolverModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-light border-opacity-25">
+          <h5 class="modal-title fw-bold text-white">Cerrar ticket <span class="id-mono" id="resolverTicketId"></span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-white">
+          <div class="small mb-2" id="resolverOrigen"></div>
+          <label class="small text-muted mb-1" for="resolucionTexto">Resolución del ticket:</label>
+          <textarea id="resolucionTexto" class="form-control node-select-box w-100" rows="4" maxlength="1000" placeholder="ej. Se reinstaló el cliente VPN y se validó la conexión con el usuario."></textarea>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="small text-muted" id="resolucionAyuda">Escribe al menos 5 caracteres para continuar.</span>
+            <span class="small text-muted" id="resolucionContador">0 / 1000</span>
+          </div>
+        </div>
+        <div class="modal-footer border-light border-opacity-25">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-outline-info" id="btnEditarResolucion" style="display: none;">
+            <i class="bi bi-pencil-square me-1"></i>Editar
+          </button>
+          <button type="button" class="btn btn-success" id="btnConfirmarResolver" disabled>
+            <i class="bi bi-check-circle me-1"></i>Cerrar ticket
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: editar usuario -->
+  <div class="modal fade" id="editarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-light border-opacity-25">
+          <h5 class="modal-title fw-bold text-white">Configuración de usuario</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-white">
+          <div class="mb-3">
+            <label class="small text-muted mb-1" for="editNombre">Nombre de usuario</label>
+            <input type="text" id="editNombre" class="form-control node-select-box w-100" maxlength="30" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label class="small text-muted mb-1" for="editClave">Contraseña</label>
+            <div class="input-group">
+              <input type="password" id="editClave" class="form-control node-select-box" autocomplete="new-password">
+              <button class="btn btn-outline-secondary" type="button" id="btnVerClave" title="Mostrar u ocultar">
+                <i class="bi bi-eye" id="iconoVerClave"></i>
+              </button>
+            </div>
+            <div class="small text-muted mt-1">Déjala vacía para conservar la actual.</div>
+          </div>
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="small text-muted mb-1" for="editRol">Tipo de usuario</label>
+              <select id="editRol" class="form-select node-select-box w-100">
+                <option value="USUARIO">Usuario</option>
+                <option value="IDC">IDC</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="small text-muted mb-1" for="editPuesto">Puesto</label>
+              <select id="editPuesto" class="form-select node-select-box w-100">
+                <option value="Empleado">Empleado</option>
+                <option value="Supervisor">Supervisor</option>
+                <option value="Gerente">Gerente</option>
+                <option value="Director">Director</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-light border-opacity-25">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btnGuardarUsuario"><i class="bi bi-save me-1"></i>Guardar cambios</button>
         </div>
       </div>
     </div>
@@ -838,8 +927,9 @@
     let tagPendiente = null;
     let alFinalizarPendiente = null;
     const modalConfirm = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const modalResolver = new bootstrap.Modal(document.getElementById('resolverModal'));
+    const modalEditar = new bootstrap.Modal(document.getElementById('editarModal'));
 
-    // Configuración visual de las columnas del tablero
     const PRIORIDADES = [
       { key: 'CRITICA', label: 'CRÍTICA (Urgente)', color: '#ff4d5a', icon: 'bi-exclamation-octagon-fill' },
       { key: 'ALTA',    label: 'ALTA',              color: '#ffa14a', icon: 'bi-exclamation-triangle-fill' },
@@ -847,10 +937,12 @@
       { key: 'BAJA',    label: 'BAJA',              color: '#38bdf8', icon: 'bi-arrow-down-circle-fill' }
     ];
 
-    // Nombres legibles para el título del reporte
     const NOMBRES_TAREA = {
-      resolver_ticket: 'Resolver ticket',
+      resolver_ticket: 'Cerrar ticket',
+      asignar_ticket: 'Asignar ticket',
+      desasignar_ticket: 'Quitar asignación',
       crear_usuario: 'Crear usuario',
+      editar_usuario: 'Editar usuario',
       eliminar_usuario: 'Eliminar usuario',
       clasificar_usuario: 'Cambio de puesto',
       bloquear_usuario: 'Bloquear usuario',
@@ -863,12 +955,10 @@
       return d.innerHTML;
     }
 
-    // Para valores dentro de atributos HTML (también escapa comillas)
     function escaparAtributo(valor) {
       return escaparHtml(valor).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Si la sesión expiró, vuelve al inicio de sesión
     function verificarSesion(res) {
       if (res.status === 401) {
         window.location.href = '/login';
@@ -877,10 +967,62 @@
       return res;
     }
 
+    // ===== Indicador de proceso (genérico: Procesando / Hecho / Falló) =====
+    const toast = document.getElementById('toastProceso');
+    const toastIcono = document.getElementById('toastIcono');
+    const toastTitulo = document.getElementById('toastTitulo');
+    const toastDetalle = document.getElementById('toastDetalle');
+    let temporizadorToast = null;
+
+    function mostrarToast(estado, nombreTarea, detalle) {
+      clearTimeout(temporizadorToast);
+      toast.className = 'toast-proceso visible ' + (estado === 'ok' ? 'ok' : estado === 'err' ? 'err' : '');
+
+      if (estado === 'cargando') {
+        toastIcono.className = 'toast-icono';
+        toastIcono.innerHTML = '<div class="toast-rueda"></div>';
+        toastTitulo.className = 'toast-titulo';
+        toastTitulo.innerText = 'Procesando...';
+      } else if (estado === 'ok') {
+        toastIcono.className = 'toast-icono ok';
+        toastIcono.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        toastTitulo.className = 'toast-titulo text-ok';
+        toastTitulo.innerText = 'Hecho';
+        temporizadorToast = setTimeout(ocultarToast, 3000);
+      } else {
+        toastIcono.className = 'toast-icono err';
+        toastIcono.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
+        toastTitulo.className = 'toast-titulo text-err';
+        toastTitulo.innerText = 'Falló';
+        temporizadorToast = setTimeout(ocultarToast, 8000);
+      }
+      toastDetalle.innerText = (nombreTarea || '') + (detalle ? ' · ' + detalle : '');
+    }
+
+    function ocultarToast() {
+      clearTimeout(temporizadorToast);
+      toast.classList.remove('visible');
+    }
+
+    // ===== Última ejecución de cada playbook (sección 1) =====
+    function cargarUltimasEjecuciones() {
+      fetch('/api/ultimas-ejecuciones')
+        .then(verificarSesion)
+        .then(res => res.json())
+        .then(d => {
+          document.querySelectorAll('[data-ultima]').forEach(el => {
+            const info = d[el.dataset.ultima];
+            el.innerText = info
+              ? `Última vez ejecutado: ${info.fecha}`
+              : 'Última vez ejecutado: nunca ejecutado';
+          });
+        })
+        .catch(err => console.error('Error al cargar últimas ejecuciones:', err));
+    }
+
     // ===== Panel de resultados =====
     function reiniciarPanelResultados() {
       document.getElementById('resultPanel').style.display = 'none';
-      document.getElementById('loaderSpinner').style.display = 'none';
       document.getElementById('summaryTitle').innerText = 'Resultados del Análisis';
 
       const badge = document.getElementById('statusBadge');
@@ -888,13 +1030,11 @@
       badge.innerText = 'En espera';
 
       const contenido = document.getElementById('summaryContent');
-      contenido.style.display = 'block';
       contenido.innerHTML = `<div class="text-center py-4"><p class="mb-0 text-muted">Inicia una tarea para ver el reporte.</p></div>`;
 
       document.getElementById('consoleOutput').innerText = 'Consola lista para recibir instrucciones de ejecuciones de Ansible...';
     }
 
-    // Navegación por la barra lateral: sube al inicio y limpia lo anterior
     function cambiarSeccion(seccionId) {
       detenerMetricas();
 
@@ -905,22 +1045,24 @@
       document.getElementById('btn-' + seccionId).classList.add('active');
 
       const titulos = {
-        'sec-audit': '1. Funcionamiento del Portal',
+        'sec-audit': '1. Auditoría e Infraestructura del Nodo',
         'sec-admin': '2. Gestión de Tickets',
         'sec-users': '3. Gestión de Usuarios del Portal',
-        'sec-metrics': '4. Estadísticas en Tiempo Real'
+        'sec-metrics': '4. Estadísticas en Tiempo Real',
+        'sec-logs': '5. Historial de Ejecuciones'
       };
       document.getElementById('sectionTitle').innerText = titulos[seccionId];
 
       reiniciarPanelResultados();
       window.scrollTo(0, 0);
 
+      if (seccionId === 'sec-audit') cargarUltimasEjecuciones();
       if (seccionId === 'sec-admin') cargarTablero();
       if (seccionId === 'sec-users') cargarUsuarios();
       if (seccionId === 'sec-metrics') iniciarMetricas();
+      if (seccionId === 'sec-logs') cargarLogs();
     }
 
-    // opciones: { tag, mensaje (HTML ya escapado), alFinalizar }
     function solicitarConfirmacion(archivoPlaybook, nombreTarea, variables = {}, opciones = {}) {
       playbookPendiente = archivoPlaybook;
       nombreTareaPendiente = nombreTarea;
@@ -948,7 +1090,6 @@
       const badge = document.getElementById('statusBadge');
       const summaryTitle = document.getElementById('summaryTitle');
       const summaryContent = document.getElementById('summaryContent');
-      const loaderSpinner = document.getElementById('loaderSpinner');
       const panel = document.getElementById('resultPanel');
 
       panel.style.display = 'block';
@@ -956,17 +1097,12 @@
       badge.className = 'badge bg-warning text-dark px-3 py-2';
       badge.innerText = 'Ejecutando...';
       summaryTitle.innerText = `Ejecutando ${nombreTarea}`;
-
-      loaderSpinner.style.display = 'flex';
-      summaryContent.style.display = 'none';
+      summaryContent.innerHTML = `<div class="text-center py-3"><p class="mb-0 text-muted">Procesando, revisa la consola para ver el avance...</p></div>`;
       consoleOutput.innerText = `Procesando ${playbook} (${tag || 'All'})...\n`;
 
-      // El host objetivo lo define el servidor (TARGET_HOST en app.py)
-      const payload = {
-        playbook: playbook,
-        tag: tag,
-        ...variables
-      };
+      mostrarToast('cargando', nombreTarea);
+
+      const payload = { playbook: playbook, tag: tag, ...variables };
 
       fetch('/run-playbook', {
         method: 'POST',
@@ -976,8 +1112,6 @@
       .then(verificarSesion)
       .then(response => response.json())
       .then(data => {
-        loaderSpinner.style.display = 'none';
-        summaryContent.style.display = 'block';
         consoleOutput.innerText = data.output;
 
         const ok = data.status === 'success';
@@ -987,28 +1121,27 @@
 
         if (ok) {
           renderizarReporte(data.output, summaryContent);
+          mostrarToast('ok', nombreTarea);
         } else {
-          // Si el playbook explicó el motivo ("ERROR: ..."), se muestra en la página
           const coincidencia = (data.output || '').match(/ERROR: [^"\\\n]+/);
-          const motivo = coincidencia ? coincidencia[0] : 'La ejecución terminó con errores. Revisa el detalle en la consola.';
-          summaryContent.innerHTML = `<div class="result-badge bad">[ERROR] ${escaparHtml(motivo.replace(/^ERROR: /, ''))}</div>`;
+          const motivo = coincidencia ? coincidencia[0].replace(/^ERROR: /, '') : '';
+          summaryContent.innerHTML = `<div class="result-badge bad">[ERROR] ${escaparHtml(motivo || 'La ejecución terminó con errores. Revisa el detalle en la consola.')}</div>`;
+          mostrarToast('err', nombreTarea, motivo || 'Revisa la consola');
         }
 
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        cargarUltimasEjecuciones();
         if (alFinalizar) alFinalizar(ok, data);
       })
       .catch(error => {
-        loaderSpinner.style.display = 'none';
-        summaryContent.style.display = 'block';
         badge.className = 'badge bg-danger px-3 py-2';
         badge.innerText = 'Error Red';
         summaryTitle.innerText = `Error de Comunicación`;
         summaryContent.innerHTML = `<div class="result-badge bad">[ERROR] No se pudo obtener respuesta del servidor Flask.</div>`;
         consoleOutput.innerText = `Error: ${error}`;
+        mostrarToast('err', nombreTarea, 'Sin respuesta del servidor');
       });
     }
 
-    // Lee todos los "msg" de la salida de Ansible respetando comillas y corchetes anidados
     function extraerMensajesAnsible(salidaCruda) {
       const mensajes = [];
       const patron = /"msg":\s*/g;
@@ -1055,7 +1188,6 @@
       return mensajes;
     }
 
-    // Cada línea se colorea según su etiqueta: [OK] verde, [AVISO] amarillo, [ERROR] rojo
     function renderizarReporte(salidaCruda, contenedor) {
       const lineas = extraerMensajesAnsible(salidaCruda)
         .filter(l => l.trim().length > 0 && !l.includes('======'));
@@ -1081,38 +1213,157 @@
       contenedor.innerHTML = html;
     }
 
-    // ===== Vista de tickets =====
-    function listarTickets() {
+    // ===== Tickets =====
+    let filtroActual = '';
+    let ticketPorResolver = '';
+    let ticketsCache = {};
+    const campoBuscar = document.getElementById('ticketBuscarInput');
+    const campoResolucion = document.getElementById('resolucionTexto');
+    const botonResolver = document.getElementById('btnConfirmarResolver');
+    const botonEditar = document.getElementById('btnEditarResolucion');
+    const origenResolucion = document.getElementById('resolverOrigen');
+
+    document.getElementById('formBuscar').addEventListener('submit', function(e) {
+      e.preventDefault();
+      buscarTicket();
+    });
+
+    function buscarTicket() {
+      filtroActual = campoBuscar.value.trim();
       reiniciarPanelResultados();
       cargarTablero();
     }
 
-    function resolverTicket(id) {
-      id = (id || '').trim();
-      if (!id) {
-        alert('Escribe o selecciona el ID de un ticket.');
-        return;
-      }
-      ejecutarTarea('gestion_portal_auth.yml', 'resolver_ticket', { ticket_id: id }, () => cargarTablero());
+    function limpiarBusqueda() {
+      campoBuscar.value = '';
+      filtroActual = '';
+      cargarTablero();
     }
 
-    function copiarId(id) {
-      document.getElementById('ticketIdInput').value = id;
+    // Cerrar: localiza el ticket por número o usuario y abre la ventana de cierre
+    function cerrarTicket() {
+      const valor = campoBuscar.value.trim();
+      if (!valor) {
+        alert('Escribe el número del ticket que quieres cerrar.');
+        return;
+      }
+      fetch('/api/tickets?q=' + encodeURIComponent(valor))
+        .then(verificarSesion)
+        .then(res => res.json())
+        .then(data => {
+          const encontrados = PRIORIDADES.flatMap(p => data[p.key] || []);
+          if (encontrados.length === 0) {
+            alert('No hay un ticket pendiente que coincida con "' + valor + '".');
+          } else if (encontrados.length > 1) {
+            alert('El usuario tiene ' + encontrados.length + ' tickets pendientes. Escribe el número del ticket que quieres cerrar.');
+            filtroActual = valor;
+            cargarTablero();
+          } else {
+            ticketsCache[encontrados[0].id] = encontrados[0];
+            abrirCierre(encontrados[0].id);
+          }
+        })
+        .catch(err => console.error('Error al buscar ticket:', err));
+    }
+
+    // Abre la ventana de cierre. Si el IDC ya resolvió, muestra su texto (solo lectura) con opción de editarlo.
+    function abrirCierre(id) {
+      const t = ticketsCache[id];
+      if (!t) return;
+      ticketPorResolver = id;
+      document.getElementById('resolverTicketId').innerText = '#' + t.numero;
+
+      if (t.resolucion_idc) {
+        campoResolucion.value = t.resolucion_idc;
+        campoResolucion.readOnly = true;
+        botonEditar.style.display = 'inline-block';
+        origenResolucion.className = 'small text-ok mb-2';
+        origenResolucion.innerText = `Resolución enviada por el IDC ${t.asignado_a}` +
+          (t.fecha_resolucion_idc ? ` (${t.fecha_resolucion_idc})` : '') +
+          '. Pulsa Editar si necesitas corregirla.';
+      } else {
+        campoResolucion.value = '';
+        campoResolucion.readOnly = false;
+        botonEditar.style.display = 'none';
+        origenResolucion.className = 'small text-warn mb-2';
+        origenResolucion.innerText = t.asignado_a
+          ? `El IDC ${t.asignado_a} aún no envía su resolución. Puedes escribirla tú.`
+          : 'Este ticket no tiene IDC asignado. Escribe la resolución.';
+      }
+
+      actualizarEstadoResolver();
+      modalResolver.show();
+    }
+
+    botonEditar.addEventListener('click', function() {
+      campoResolucion.readOnly = false;
+      botonEditar.style.display = 'none';
+      origenResolucion.className = 'small text-warn mb-2';
+      origenResolucion.innerText = 'Editando la resolución. Al cerrar el ticket se guardará tu versión.';
+      campoResolucion.focus();
+    });
+
+    function actualizarEstadoResolver() {
+      const largo = campoResolucion.value.trim().length;
+      botonResolver.disabled = largo < 5;
+      document.getElementById('resolucionContador').innerText = `${campoResolucion.value.length} / 1000`;
+      const ayuda = document.getElementById('resolucionAyuda');
+      ayuda.className = largo >= 5 ? 'small text-ok' : 'small text-muted';
+      ayuda.innerText = largo >= 5 ? 'Listo para cerrar.' : 'Escribe al menos 5 caracteres para continuar.';
+    }
+
+    campoResolucion.addEventListener('input', actualizarEstadoResolver);
+    document.getElementById('resolverModal').addEventListener('shown.bs.modal', function() {
+      if (!campoResolucion.readOnly) campoResolucion.focus();
+    });
+
+    botonResolver.addEventListener('click', function() {
+      const resolucion = campoResolucion.value.trim();
+      if (resolucion.length < 5) return;
+      modalResolver.hide();
+      ejecutarTarea('gestion_portal_auth.yml', 'resolver_ticket',
+        { ticket_id: ticketPorResolver, resolucion: resolucion },
+        () => { cargarTablero(); });
+    });
+
+    function copiarNumero(numero) {
+      campoBuscar.value = numero;
     }
 
     function cargarTablero() {
       const contenedor = document.getElementById('boardContainer');
-      fetch('/api/tickets')
+      fetch('/api/tickets?q=' + encodeURIComponent(filtroActual))
         .then(verificarSesion)
         .then(res => res.json())
-        .then(data => renderizarTablero(data, contenedor))
+        .then(data => {
+          renderizarTablero(data, contenedor);
+          const total = PRIORIDADES.reduce((s, p) => s + (data[p.key] || []).length, 0);
+          document.getElementById('avisoBusqueda').innerText = filtroActual
+            ? `${total} resultado(s) para "${filtroActual}"` : '';
+          document.getElementById('btnLimpiarBusqueda').style.display = filtroActual ? 'inline-block' : 'none';
+        })
         .catch(err => {
           contenedor.innerHTML = `<div class="board-empty w-100 text-err">No se pudieron cargar los tickets.</div>`;
           console.error('Error al cargar tablero:', err);
         });
     }
 
+    function selectorIdc(ticket, idcs) {
+      const asignado = ticket.asignado_a || '';
+      if (!idcs.length && !asignado) {
+        return `<select class="form-select node-select-box select-idc" disabled title="Crea un usuario de tipo IDC para poder asignar tickets"><option>Sin IDC disponibles</option></select>`;
+      }
+      const lista = idcs.slice();
+      if (asignado && !lista.includes(asignado)) lista.push(asignado);
+      const opciones = ['<option value="">Sin asignar</option>']
+        .concat(lista.map(n => `<option value="${escaparAtributo(n)}" ${n === asignado ? 'selected' : ''}>${escaparHtml(n)}</option>`))
+        .join('');
+      return `<select class="form-select node-select-box select-idc" data-accion="asignar" data-ticket="${escaparAtributo(ticket.id)}">${opciones}</select>`;
+    }
+
     function renderizarTablero(data, contenedor) {
+      const idcs = data.idcs || [];
+      ticketsCache = {};
       let html = '';
 
       PRIORIDADES.forEach(p => {
@@ -1129,6 +1380,7 @@
         } else {
           let tipoActual = null;
           tickets.forEach(t => {
+            ticketsCache[t.id] = t;
             if (t.tipo !== tipoActual) {
               tipoActual = t.tipo;
               html += `<div class="board-type-label">${escaparHtml(tipoActual)}</div>`;
@@ -1136,17 +1388,23 @@
             html += `<div class="ticket-card">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
-                  <strong>${escaparHtml(t.usuario || 'Sin usuario')}</strong>
+                  <span class="num-ticket" style="cursor:pointer;" title="Clic para copiar el número al buscador" onclick="copiarNumero('${escaparAtributo(t.numero)}')">#${escaparHtml(t.numero)}</span>
+                  <strong class="ms-2">${escaparHtml(t.usuario || 'Sin usuario')}</strong>
                   <span class="ticket-meta">(${escaparHtml(t.puesto || '—')})</span>
                 </div>
                 ${t.modalidad ? `<span class="badge bg-light bg-opacity-10 text-info border border-info border-opacity-50">${escaparHtml(t.modalidad)}</span>` : ''}
               </div>
+              <div class="ticket-meta mt-1"><i class="bi bi-calendar3 me-1"></i>${escaparHtml(t.fecha)}</div>
               ${t.afectado ? `<div class="mt-1"><i class="bi bi-pc-display me-1 text-muted"></i>${escaparHtml(t.afectado)}</div>` : ''}
               ${t.descripcion ? `<div class="ticket-meta mt-1">${escaparHtml(t.descripcion)}</div>` : ''}
-              <div class="d-flex justify-content-between align-items-center mt-2">
-                <span class="ticket-id" title="Clic para copiar al campo de ID" onclick="copiarId('${escaparAtributo(t.id)}')">#${escaparHtml(t.id.slice(-6))}</span>
-                <button class="btn btn-success btn-sm py-0 px-2" onclick="resolverTicket('${escaparAtributo(t.id)}')">
-                  <i class="bi bi-check-circle me-1"></i>Resolver
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <span class="ticket-meta text-nowrap">IDC:</span>
+                ${selectorIdc(t, idcs)}
+              </div>
+              ${t.resolucion_idc ? `<div class="small text-ok mt-2"><i class="bi bi-check2-circle me-1"></i>Resolución del IDC lista para cierre</div>` : ''}
+              <div class="d-flex justify-content-end mt-2">
+                <button class="btn btn-success btn-sm py-0 px-2" onclick="abrirCierre('${escaparAtributo(t.id)}')">
+                  <i class="bi bi-check-circle me-1"></i>Cerrar
                 </button>
               </div>
             </div>`;
@@ -1159,7 +1417,22 @@
       contenedor.innerHTML = html;
     }
 
-    // ===== Gestión de usuarios =====
+    // Asignación de IDC desde el tablero
+    document.getElementById('boardContainer').addEventListener('change', function(e) {
+      const selector = e.target.closest('select[data-accion="asignar"]');
+      if (!selector) return;
+      const ticket = selector.dataset.ticket;
+      const idc = selector.value;
+      if (idc) {
+        ejecutarTarea('gestion_portal_auth.yml', 'asignar_ticket', { ticket_id: ticket, idc_name: idc }, () => cargarTablero());
+      } else {
+        ejecutarTarea('gestion_portal_auth.yml', 'desasignar_ticket', { ticket_id: ticket }, () => cargarTablero());
+      }
+    });
+
+    // ===== Usuarios =====
+    let usuariosCache = {};
+
     function normalizarTexto(texto) {
       return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     }
@@ -1174,7 +1447,7 @@
         .then(datos => renderizarUsuarios(datos))
         .catch(err => {
           document.getElementById('tablaUsuarios').innerHTML =
-            `<tr><td colspan="6" class="text-err text-center py-4">No se pudieron cargar los usuarios.</td></tr>`;
+            `<tr><td colspan="7" class="text-err text-center py-4">No se pudieron cargar los usuarios.</td></tr>`;
           console.error('Error al cargar usuarios:', err);
         });
     }
@@ -1183,21 +1456,34 @@
       const cuerpo = document.getElementById('tablaUsuarios');
       const usuarios = datos.usuarios || [];
       document.getElementById('contadorUsuarios').innerText = usuarios.length;
+      usuariosCache = {};
+      usuarios.forEach(u => { usuariosCache[u.username] = u; });
 
       if (usuarios.length === 0) {
-        cuerpo.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">No hay usuarios registrados.</td></tr>`;
+        cuerpo.innerHTML = `<tr><td colspan="7" class="text-muted text-center py-4">No hay usuarios registrados.</td></tr>`;
         return;
       }
 
       cuerpo.innerHTML = usuarios.map(u => {
         const nombre = escaparAtributo(u.username);
         const bloqueado = u.status === 'LOCKED';
-        const lista = datos.puestos.includes(u.puesto) ? datos.puestos : [u.puesto || '—', ...datos.puestos];
-        const opciones = lista.map(p =>
-          `<option value="${escaparAtributo(p)}" ${p === u.puesto ? 'selected' : ''}>${escaparHtml(p)}</option>`).join('');
+        const esIdc = u.rol === 'IDC';
+
+        let celdaPuesto;
+        if (esIdc) {
+          celdaPuesto = '<span class="text-muted">IDC</span>';
+        } else {
+          const lista = datos.puestos.includes(u.puesto) ? datos.puestos : [u.puesto || '—', ...datos.puestos];
+          const opciones = lista.map(p =>
+            `<option value="${escaparAtributo(p)}" ${p === u.puesto ? 'selected' : ''}>${escaparHtml(p)}</option>`).join('');
+          celdaPuesto = `<select class="form-select node-select-box select-puesto" data-accion="puesto" data-usuario="${nombre}">${opciones}</select>`;
+        }
 
         const prio = PRIORIDADES.find(p => p.key === normalizarTexto(u.prioridad_base));
         const colorPrio = prio ? prio.color : '#64748b';
+        const celdaPrio = esIdc
+          ? '<span class="text-muted">—</span>'
+          : `<span class="punto-prio" style="background:${colorPrio}"></span>${escaparHtml(u.prioridad_base || '—')}`;
 
         const botonBloqueo = bloqueado
           ? `<button class="btn btn-outline-success btn-sm" data-accion="desbloquear" data-usuario="${nombre}"><i class="bi bi-unlock me-1"></i>Desbloquear</button>`
@@ -1205,16 +1491,16 @@
 
         return `<tr>
           <td><strong>${escaparHtml(u.username)}</strong></td>
-          <td>
-            <select class="form-select node-select-box select-puesto" data-accion="puesto" data-usuario="${nombre}">${opciones}</select>
-          </td>
-          <td><span class="punto-prio" style="background:${colorPrio}"></span>${escaparHtml(u.prioridad_base || '—')}</td>
+          <td><span class="chip-rol ${esIdc ? 'idc' : ''}">${esIdc ? 'IDC' : 'Usuario'}</span></td>
+          <td>${celdaPuesto}</td>
+          <td>${celdaPrio}</td>
           <td>${bloqueado
             ? '<span class="text-err fw-bold">Bloqueado</span>'
             : '<span class="text-ok fw-bold">Activo</span>'}</td>
           <td>${u.tickets_pendientes} / ${u.tickets_total}</td>
           <td class="text-end">
             <div class="d-inline-flex gap-2">
+              <button class="btn btn-outline-info btn-sm" data-accion="editar" data-usuario="${nombre}"><i class="bi bi-pencil-square me-1"></i>Editar</button>
               ${botonBloqueo}
               <button class="btn btn-outline-danger btn-sm" data-accion="eliminar" data-usuario="${nombre}"><i class="bi bi-trash me-1"></i>Eliminar</button>
             </div>
@@ -1226,33 +1512,37 @@
     function accionUsuario(accion, usuario, valor) {
       const refrescar = () => cargarUsuarios();
 
-      if (accion === 'bloquear') {
+      if (accion === 'editar') {
+        abrirEditar(usuario);
+      } else if (accion === 'bloquear') {
         ejecutarTarea('gestion_portal_auth.yml', 'bloquear_usuario', { user_name: usuario }, refrescar);
       } else if (accion === 'desbloquear') {
         ejecutarTarea('gestion_portal_auth.yml', 'desbloquear_usuario', { user_name: usuario }, refrescar);
       } else if (accion === 'puesto') {
         ejecutarTarea('gestion_portal_auth.yml', 'clasificar_usuario', { user_name: usuario, nuevo_puesto: valor }, refrescar);
       } else if (accion === 'eliminar') {
-        const conTickets = document.getElementById('chkBorrarTickets').checked;
-        const aviso = conTickets
-          ? 'También se <strong>borrarán todos sus tickets</strong> (pendientes y resueltos).'
-          : 'Sus tickets se conservarán.';
         solicitarConfirmacion(
           'gestion_portal_auth.yml',
           'Eliminar usuario',
-          { user_name: usuario, borrar_tickets: conTickets },
+          { user_name: usuario },
           {
             tag: 'eliminar_usuario',
-            mensaje: `Se eliminará al usuario <strong>${escaparHtml(usuario)}</strong>.<br>${aviso}<br><span class="text-warn small">Esta acción no se puede deshacer.</span>`,
+            mensaje: `Se eliminará al usuario <strong>${escaparHtml(usuario)}</strong>.<br>Sus tickets se conservarán.<br><span class="text-warn small">Esta acción no se puede deshacer.</span>`,
             alFinalizar: refrescar
           }
         );
       }
     }
 
+    // --- Crear usuario ---
+    document.getElementById('nuevoUsuarioRol').addEventListener('change', function() {
+      document.getElementById('nuevoUsuarioPuesto').disabled = this.value === 'IDC';
+    });
+
     function crearUsuario() {
       const campoNombre = document.getElementById('nuevoUsuarioNombre');
       const campoClave = document.getElementById('nuevoUsuarioClave');
+      const rol = document.getElementById('nuevoUsuarioRol').value;
       const puesto = document.getElementById('nuevoUsuarioPuesto').value;
       const nombre = campoNombre.value.trim();
       const clave = campoClave.value;
@@ -1269,19 +1559,78 @@
       ejecutarTarea(
         'gestion_portal_auth.yml',
         'crear_usuario',
-        { user_name: nombre, nueva_password: clave, nuevo_puesto: puesto },
+        { user_name: nombre, nueva_password: clave, tipo_usuario: rol, nuevo_puesto: rol === 'IDC' ? '' : puesto },
         (ok) => {
           if (ok) {
             campoNombre.value = '';
             campoClave.value = '';
+            document.getElementById('nuevoUsuarioRol').value = 'USUARIO';
             document.getElementById('nuevoUsuarioPuesto').value = 'Empleado';
+            document.getElementById('nuevoUsuarioPuesto').disabled = false;
           }
           cargarUsuarios();
         }
       );
     }
 
-    // Un solo manejador para todos los botones y selectores de la tabla
+    // --- Editar usuario ---
+    let usuarioEnEdicion = '';
+    const editClave = document.getElementById('editClave');
+
+    function abrirEditar(username) {
+      const u = usuariosCache[username];
+      if (!u) return;
+      usuarioEnEdicion = username;
+      document.getElementById('editNombre').value = u.username;
+      editClave.value = u.password || '';
+      editClave.type = 'password';
+      document.getElementById('iconoVerClave').className = 'bi bi-eye';
+      document.getElementById('editRol').value = u.rol === 'IDC' ? 'IDC' : 'USUARIO';
+      document.getElementById('editPuesto').value = ['Empleado', 'Supervisor', 'Gerente', 'Director'].includes(u.puesto) ? u.puesto : 'Empleado';
+      document.getElementById('editPuesto').disabled = u.rol === 'IDC';
+      modalEditar.show();
+    }
+
+    document.getElementById('editRol').addEventListener('change', function() {
+      document.getElementById('editPuesto').disabled = this.value === 'IDC';
+    });
+
+    document.getElementById('btnVerClave').addEventListener('click', function() {
+      const visible = editClave.type === 'text';
+      editClave.type = visible ? 'password' : 'text';
+      document.getElementById('iconoVerClave').className = visible ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+
+    document.getElementById('btnGuardarUsuario').addEventListener('click', function() {
+      const nuevoNombre = document.getElementById('editNombre').value.trim();
+      const clave = editClave.value;
+      const rol = document.getElementById('editRol').value;
+      const puesto = document.getElementById('editPuesto').value;
+
+      if (!/^[A-Za-z0-9_.-]{3,30}$/.test(nuevoNombre)) {
+        alert('El usuario debe tener de 3 a 30 caracteres: letras, números, punto, guion o guion bajo.');
+        return;
+      }
+      if (clave.trim() !== '' && clave.trim().length < 4) {
+        alert('La contraseña debe tener al menos 4 caracteres.');
+        return;
+      }
+
+      modalEditar.hide();
+      ejecutarTarea(
+        'gestion_portal_auth.yml',
+        'editar_usuario',
+        {
+          user_name: usuarioEnEdicion,
+          nuevo_nombre: nuevoNombre,
+          nueva_password: clave,
+          tipo_usuario: rol,
+          nuevo_puesto: rol === 'IDC' ? '' : puesto
+        },
+        () => cargarUsuarios()
+      );
+    });
+
     const cuerpoUsuarios = document.getElementById('tablaUsuarios');
     cuerpoUsuarios.addEventListener('click', function(e) {
       const boton = e.target.closest('button[data-accion]');
@@ -1292,7 +1641,7 @@
       if (selector) accionUsuario('puesto', selector.dataset.usuario, selector.value);
     });
 
-    // ===== Telemetría en tiempo real =====
+    // ===== Estadísticas =====
     const INTERVALO_METRICAS_MS = 5000;
     const MAX_PUNTOS_VIVO = 40;
     const COLOR_TIPO_TOP = '#ffd23f';
@@ -1333,9 +1682,7 @@
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
+          responsive: true, maintainAspectRatio: false, animation: false,
           scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { ticks: { maxTicksLimit: 8 } } },
           plugins: { legend: { position: 'bottom' } }
         }
@@ -1347,24 +1694,14 @@
           labels: PRIORIDADES.map(p => p.label.replace(' (Urgente)', '')),
           datasets: [{ data: [0, 0, 0, 0], backgroundColor: PRIORIDADES.map(p => p.color), borderColor: '#04164f', borderWidth: 2 }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '62%',
-          plugins: { legend: { position: 'bottom' } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } }
       });
 
-      // Barras con el total de tickets por tipo, ordenadas de mayor a menor
       graficaTipo = new Chart(document.getElementById('chartTipo'), {
         type: 'bar',
-        data: {
-          labels: [],
-          datasets: [{ label: 'Total de tickets', data: [], backgroundColor: [], borderRadius: 4 }]
-        },
+        data: { labels: [], datasets: [{ label: 'Total de tickets', data: [], backgroundColor: [], borderRadius: 4 }] },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
           plugins: {
             legend: { display: false },
@@ -1381,7 +1718,6 @@
       });
     }
 
-    // Ordena los tipos por cantidad, resalta el más frecuente y escribe el aviso
     function actualizarTiposMasSolicitados(porTipo) {
       const filas = Object.entries(porTipo)
         .map(([tipo, v]) => ({ tipo, pendientes: v.pendientes, resueltos: v.resueltos, total: v.pendientes + v.resueltos }))
@@ -1425,6 +1761,34 @@
       etiqueta.innerText = texto;
     }
 
+    function cargarResueltos() {
+      fetch('/api/resueltos')
+        .then(verificarSesion)
+        .then(res => res.json())
+        .then(d => {
+          document.getElementById('contadorResueltos').innerText = d.total;
+          const cuerpo = document.getElementById('tablaResueltos');
+          if (!d.tickets.length) {
+            cuerpo.innerHTML = `<tr><td colspan="7" class="text-muted text-center py-4">Aún no hay tickets resueltos.</td></tr>`;
+            document.getElementById('notaResueltos').innerText = '';
+            return;
+          }
+          cuerpo.innerHTML = d.tickets.map(t => `<tr>
+            <td class="id-mono">#${escaparHtml(t.numero)}</td>
+            <td class="text-nowrap">${escaparHtml(t.fecha)}</td>
+            <td>${escaparHtml(t.tipo)}</td>
+            <td>${escaparHtml(t.modalidad)}</td>
+            <td>${escaparHtml(t.equipo)}</td>
+            <td>${escaparHtml(t.problema)}</td>
+            <td>${t.resolucion ? escaparHtml(t.resolucion) : '<span class="text-muted">(sin registro)</span>'}</td>
+          </tr>`).join('');
+          document.getElementById('notaResueltos').innerText = d.total > d.tickets.length
+            ? `Se muestran los ${d.tickets.length} más recientes. El CSV incluye los ${d.total}.`
+            : '';
+        })
+        .catch(err => console.error('Error al cargar resueltos:', err));
+    }
+
     function actualizarMetricas() {
       if (document.hidden) return;
 
@@ -1437,7 +1801,6 @@
         .then(m => {
           marcarConexion(true, `Conectado en vivo · actualizado ${m.actualizado}`);
 
-          // Indicadores generales
           const portal = document.getElementById('mtEstadoPortal');
           portal.innerText = m.estado_portal;
           portal.className = 'metric-value ' + (m.estado_portal === 'ONLINE' ? 'text-ok' : 'text-err');
@@ -1451,13 +1814,14 @@
           establecerTexto('mtUsuarios', m.usuarios);
           establecerTexto('mtBloqueados', `${m.usuarios_bloqueados} bloqueados`);
 
-          // Tiempos
           establecerTexto('mtPromedio', formatearDuracion(m.tiempo_promedio_seg));
+          let sub = `Sobre ${m.resueltos_con_fecha} ticket(s) con fecha`;
+          if (m.resueltos_sin_fecha > 0) sub += ` · ${m.resueltos_sin_fecha} sin fecha (anteriores)`;
+          establecerTexto('mtPromedioSub', sub);
           establecerTexto('mtMediana', formatearDuracion(m.tiempo_mediana_seg));
           establecerTexto('mtAntiguedad', formatearDuracion(m.antiguedad_promedio_seg));
           establecerTexto('mtMasAntiguo', formatearDuracion(m.mas_antiguo_seg));
 
-          // Gráfica en vivo
           historialVivo.etiquetas.push(m.actualizado);
           historialVivo.pendientes.push(m.pendientes);
           historialVivo.resueltos.push(m.resueltos);
@@ -1468,14 +1832,11 @@
           }
           graficaVivo.update('none');
 
-          // Dona por prioridad
           graficaPrioridad.data.datasets[0].data = PRIORIDADES.map(p => m.por_prioridad[p.key].pendientes);
           graficaPrioridad.update('none');
 
-          // Barras: tipos más solicitados
           actualizarTiposMasSolicitados(m.por_tipo);
 
-          // Tabla por prioridad
           let filas = '';
           PRIORIDADES.forEach(p => {
             const d = m.por_prioridad[p.key];
@@ -1494,10 +1855,15 @@
         });
     }
 
+    function ciclo() {
+      actualizarMetricas();
+      if (!document.hidden) cargarResueltos();
+    }
+
     function iniciarMetricas() {
       crearGraficas();
-      actualizarMetricas();
-      temporizadorMetricas = setInterval(actualizarMetricas, INTERVALO_METRICAS_MS);
+      ciclo();
+      temporizadorMetricas = setInterval(ciclo, INTERVALO_METRICAS_MS);
     }
 
     function detenerMetricas() {
@@ -1507,9 +1873,87 @@
       }
     }
 
+    // ===== Historial de ejecuciones =====
+    const filtroTipo = document.getElementById('filtroTipo');
+    const filtroDia = document.getElementById('filtroDia');
+    const filtroResultado = document.getElementById('filtroResultado');
+
+    function rellenarSelector(selector, opciones, textoTodos) {
+      const actual = selector.value;
+      selector.innerHTML = `<option value="">${textoTodos}</option>` +
+        opciones.map(o => `<option value="${escaparAtributo(o.valor)}">${escaparHtml(o.texto)}</option>`).join('');
+      const existe = opciones.some(o => o.valor === actual);
+      selector.value = existe ? actual : '';
+      return existe || actual === '';
+    }
+
+    function claseResultado(estado) {
+      if (estado === 'OK') return 'text-ok';
+      if (estado === 'TIMEOUT') return 'text-warn';
+      return 'text-err';
+    }
+
+    function cargarLogs(reintento = false) {
+      const params = new URLSearchParams({
+        tipo: filtroTipo.value,
+        dia: filtroDia.value,
+        resultado: filtroResultado.value
+      });
+
+      fetch('/api/logs?' + params.toString())
+        .then(verificarSesion)
+        .then(res => {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(d => {
+          const tipoVigente = rellenarSelector(filtroTipo,
+            d.tipos.map(t => ({ valor: t.tipo, texto: `${t.tipo} (${t.total})` })), 'Todos los tipos');
+          const diaVigente = rellenarSelector(filtroDia,
+            d.dias.map(x => ({ valor: x.valor, texto: `${x.texto} (${x.total})` })), 'Todos los días');
+
+          if ((!tipoVigente || !diaVigente) && !reintento) {
+            cargarLogs(true);
+            return;
+          }
+
+          document.getElementById('contadorLogs').innerText = d.total;
+          const cuerpo = document.getElementById('tablaLogs');
+
+          if (!d.registros.length) {
+            cuerpo.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">No hay ejecuciones con estos filtros.</td></tr>`;
+            document.getElementById('notaLogs').innerText = '';
+            return;
+          }
+
+          cuerpo.innerHTML = d.registros.map(r => `<tr>
+            <td>${escaparHtml(r.fecha)}</td>
+            <td>${escaparHtml(r.tipo)}</td>
+            <td class="detalle">${escaparHtml(r.detalle)}</td>
+            <td class="estado ${claseResultado(r.estado)}">${escaparHtml(r.estado)}</td>
+            <td>${r.duracion != null ? Number(r.duracion).toFixed(1) + ' s' : '—'}</td>
+            <td class="id-mono">${escaparHtml(r.ip)}</td>
+          </tr>`).join('');
+
+          document.getElementById('notaLogs').innerText = d.total > d.registros.length
+            ? `Se muestran las ${d.registros.length} más recientes de ${d.total}. Usa los filtros para acotar.`
+            : 'Las horas están en hora de México. Los inicios de sesión solo aparecen al elegir ese tipo.';
+        })
+        .catch(err => {
+          document.getElementById('tablaLogs').innerHTML =
+            `<tr><td colspan="6" class="text-err text-center py-4">No se pudo cargar el historial.</td></tr>`;
+          console.error('Error al cargar historial:', err);
+        });
+    }
+
+    [filtroTipo, filtroDia, filtroResultado].forEach(el => el.addEventListener('change', () => cargarLogs()));
+
     function limpiarConsola() {
       document.getElementById('consoleOutput').innerText = 'Consola limpia.';
     }
+
+    // Carga inicial de la sección 1
+    cargarUltimasEjecuciones();
   </script>
 </body>
 </html>

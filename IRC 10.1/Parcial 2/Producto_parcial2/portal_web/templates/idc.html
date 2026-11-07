@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centro de Soporte TI | Tickets Asignados IDC</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='portal.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='extra.css') }}">
+
+  <style>
+    /* Fondo azul marino principal */
+    body {
+      background-color: #041238;
+      color: #ffffff;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Barra de navegación superior */
+    .navbar-custom {
+      background-color: #061e5c;
+      border-bottom: 2px solid #0d3896;
+    }
+
+    /* Tarjetas integradas con borde superior rojo */
+    .card-custom {
+      background-color: #092368;
+      border-radius: 12px;
+      border: 1px solid #1d4ed8;
+      border-top: 4px solid #ef233c;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+    }
+
+    /* Cuadros del resumen estadístico */
+    .resumen-box {
+      background-color: #061848;
+      border: 1px solid #1d4ed8;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    /* Tabla estilizada con textos blancos */
+    .table-custom {
+      color: #ffffff;
+      --bs-table-bg: transparent;
+    }
+
+    .table-custom th {
+      border-bottom: 2px solid #1d4ed8;
+      color: #ffffff;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .table-custom td {
+      border-bottom: 1px solid rgba(29, 78, 216, 0.4);
+      vertical-align: middle;
+      color: #ffffff;
+    }
+
+    .text-white-custom {
+      color: #f8fafc !important;
+    }
+
+    /* Badges estilizados */
+    .badge-modality {
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.1);
+    }
+
+    .badge-priority {
+      background-color: #1e293b;
+      color: #ffffff;
+      border: 1px solid #475569;
+    }
+
+    .resolucion-box {
+      background-color: #061848;
+      border: 1px dashed #1d4ed8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      color: #f8fafc;
+      margin-top: 4px;
+      max-width: 280px;
+      word-break: break-word;
+    }
+
+    /* Ventana emergente */
+    .modal-content {
+      background-color: #092368;
+      border: 1px solid #1d4ed8;
+      border-top: 4px solid #ef233c;
+      border-radius: 12px;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-custom py-3 mb-4">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold d-flex align-items-center gap-2 text-white">
+      <i class="bi bi-tools text-info"></i> Centro de Soporte TI
+    </span>
+    <span class="text-white">
+      Usuario: <strong class="text-info">{{ user.username }}</strong> - <span class="text-white-custom">IDC</span> |
+      <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger ms-2"><i class="bi bi-box-arrow-right me-1"></i>Salir</a>
+    </span>
+  </div>
+</nav>
+
+{% set clases_prioridad = {'CRÍTICA': 'bg-danger', 'ALTA': 'bg-warning text-dark', 'MEDIA': 'badge-priority', 'BAJA': 'bg-secondary'} %}
+
+<main class="container-fluid px-3 px-lg-4 pb-5">
+  <div class="card card-custom p-4">
+    <h5 class="fw-bold mb-4 d-flex align-items-center gap-2 text-white">
+      <i class="bi bi-clipboard-check text-info"></i> Tickets Asignados
+    </h5>
+
+    <!-- Panel Resumen contador -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="resumen-box">
+          <div class="fs-3 fw-bold text-warning">{{ pendientes }}</div>
+          <div class="small text-white-custom fw-semibold">Pendientes</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="resumen-box">
+          <div class="fs-3 fw-bold text-info">{{ en_revision }}</div>
+          <div class="small text-white-custom fw-semibold">En revisión</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="resumen-box">
+          <div class="fs-3 fw-bold text-success">{{ resueltos }}</div>
+          <div class="small text-white-custom fw-semibold">Resueltos</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="resumen-box">
+          <div class="fs-3 fw-bold text-white">{{ tickets|length }}</div>
+          <div class="small text-white-custom fw-semibold">Total asignados</div>
+        </div>
+      </div>
+    </div>
+
+    {% if tickets %}
+    <div class="table-responsive">
+      <table class="table table-custom table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Solicitante</th>
+            <th>Tipo de fallo</th>
+            <th>Modalidad</th>
+            <th>Equipo / Programa</th>
+            <th>Problema</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th>Fechas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tickets %}
+          <tr>
+            <td><span class="font-monospace fw-bold text-info">#{{ t.numero }}</span></td>
+            <td>
+              <strong class="text-white">{{ t.solicitante }}</strong>
+              <div class="text-white-custom small">{{ t.puesto }}</div>
+            </td>
+            <td><strong class="text-white">{{ t.tipo }}</strong></td>
+            <td><span class="badge badge-modality">{{ t.modalidad }}</span></td>
+            <td class="text-white">{{ t.equipo }}</td>
+            <td class="text-white">{{ t.descripcion }}</td>
+            <td><span class="badge {{ clases_prioridad.get(t.prioridad, 'bg-secondary') }}">{{ t.prioridad }}</span></td>
+            <td>
+              {% if t.estado == 'RESUELTO' %}
+              <span class="badge bg-success p-2">RESUELTO</span>
+              {% if t.resolucion %}<div class="resolucion-box">{{ t.resolucion }}</div>{% endif %}
+
+              {% elif t.estado == 'EN REVISIÓN' %}
+              <span class="badge bg-info text-dark p-2">EN REVISIÓN</span>
+              <div class="resolucion-box">{{ t.resolucion_idc }}</div>
+              <div class="small text-white-custom mt-1">Esperando el cierre del administrador.</div>
+
+              {% else %}
+              <span class="badge bg-warning text-dark p-2">PENDIENTE</span>
+              <div class="mt-2">
+                <button type="button" class="btn btn-primary btn-sm"
+                        data-resolver data-id="{{ t.id }}" data-numero="{{ t.numero }}">
+                  <i class="bi bi-check-circle me-1"></i>Resolver ticket
+                </button>
+              </div>
+              {% endif %}
+            </td>
+            <td class="small text-white-custom">
+              Creado: {{ t.creado }}<br>
+              Asignado: {{ t.asignado }}
+              {% if t.estado == 'EN REVISIÓN' %}<br>Resuelto: {{ t.fecha_resolucion_idc }}{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-center text-white-custom py-5 mb-0">No tienes tickets asignados por ahora.</p>
+    {% endif %}
+  </div>
+</main>
+
+<!-- Ventana: resolver ticket -->
+<div class="modal fade" id="resolverModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('resolver_ticket_idc') }}">
+        <div class="modal-header border-secondary border-opacity-25">
+          <h5 class="modal-title fw-bold text-white">Resolver ticket <span class="text-info" id="resolverNumero"></span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="ticket_id" id="resolverId">
+          <label class="small text-white-custom mb-1 fw-semibold" for="resolucion">Explica brevemente cómo resolviste el ticket:</label>
+          <textarea name="resolucion" id="resolucion" class="form-control" rows="4" maxlength="1000"
+                    placeholder="ej. Se reinstaló el cliente VPN y se validó la conexión con el usuario."></textarea>
+          <div class="d-flex justify-content-between mt-1">
+            <span class="small text-white-custom" id="resolucionAyuda">Escribe al menos 5 caracteres para continuar.</span>
+            <span class="small text-white-custom" id="resolucionContador">0 / 1000</span>
+          </div>
+        </div>
+        <div class="modal-footer border-secondary border-opacity-25">
+          <button type="button" class="btn btn-outline-info" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btnEnviarResolucion" disabled>
+            <i class="bi bi-check-circle me-1"></i>Resolver ticket
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const modalResolver = new bootstrap.Modal(document.getElementById('resolverModal'));
+  const campoTexto = document.getElementById('resolucion');
+  const botonEnviar = document.getElementById('btnEnviarResolucion');
+
+  function actualizarEstado() {
+    const largo = campoTexto.value.trim().length;
+    botonEnviar.disabled = largo < 5;
+    document.getElementById('resolucionContador').innerText = campoTexto.value.length + ' / 1000';
+    document.getElementById('resolucionAyuda').innerText =
+      largo >= 5 ? 'Listo para enviar.' : 'Escribe al menos 5 caracteres para continuar.';
+  }
+
+  document.querySelectorAll('[data-resolver]').forEach(function(boton) {
+    boton.addEventListener('click', function() {
+      document.getElementById('resolverId').value = boton.dataset.id;
+      document.getElementById('resolverNumero').innerText = '#' + boton.dataset.numero;
+      campoTexto.value = '';
+      actualizarEstado();
+      modalResolver.show();
+    });
+  });
+
+  campoTexto.addEventListener('input', actualizarEstado);
+  document.getElementById('resolverModal').addEventListener('shown.bs.modal', function() { campoTexto.focus(); });
+</script>
+
+</body>
+</html>

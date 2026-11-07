@@ -1,0 +1,84 @@
+/* ==========================================================================
+   VISUAL IDENTITY & OVERRIDES - ITSM PLATFORM
+   ========================================================================== */
+
+/* Logo Mobil: Tamaño amplio y proporciones idénticas a la imagen de referencia */
+.logo-mobil {
+  display: block !important;
+  width: 190px !important;
+  height: auto !important;
+  margin: 35px auto 30px auto !important;
+  
+  /* Escalado de 3.5x para igualar el tamaño exacto del Panel Administrativo */
+  transform: scale(3.5) !important;
+  
+  /* Fondo suave con blend-mode para conservar el degradado circular tenue */
+  mix-blend-mode: lighten !important;
+  -webkit-mask-image: radial-gradient(circle at center, #000 60%, transparent 95%) !important;
+  mask-image: radial-gradient(circle at center, #000 60%, transparent 95%) !important;
+}
+
+.icono-img { 
+  width: 20px; 
+  height: 20px; 
+  object-fit: cover; 
+  border-radius: 50%; 
+  vertical-align: -5px; 
+  margin-right: 6px; 
+}
+
+/* ==========================================================================
+   PORTAL IDC & TABLAS
+   ========================================================================== */
+.tabla-ancha { 
+  min-width: 1000px; 
+}
+
+.tabla-p td.celda-texto { 
+  max-width: 260px; 
+  word-break: break-word; 
+}
+
+.id-mono { 
+  font-family: 'SFMono-Regular', Consolas, monospace; 
+  font-size: 0.74rem; 
+  color: #38bdf8; 
+  font-weight: 600;
+}
+
+.resumen-idc { 
+  display: flex; 
+  gap: 28px; 
+  flex-wrap: wrap; 
+  margin-bottom: 18px; 
+}
+
+.resumen-idc .num { 
+  font-size: 1.7rem; 
+  font-weight: 700; 
+  line-height: 1.1; 
+}
+
+.resumen-idc .lbl { 
+  font-size: 0.8rem; 
+  color: #f8fafc; 
+  font-weight: 500;
+}
+
+.num-pend { 
+  color: #ffd23f; 
+}
+
+.num-res { 
+  color: #34d399; 
+}
+
+.resolucion-box {
+  margin-top: 6px; 
+  padding: 6px 10px; 
+  border-radius: 6px; 
+  font-size: 0.8rem;
+  background: rgba(52, 211, 153, 0.10); 
+  color: #34d399;
+  border: 1px dashed rgba(52, 211, 153, 0.3);
+}

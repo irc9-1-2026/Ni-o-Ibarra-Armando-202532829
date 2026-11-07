@@ -12,13 +12,14 @@
         db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
         for t in db.tickets.find():
             usuario = t.get('usuario', {})
-            print('ID: {} | Usuario: {} ({}) | Tipo: {} | Prioridad: {} | Estado: {}'.format(
+            print('ID: {} | Usuario: {} ({}) | Tipo: {} | Prioridad: {} | Estado: {} | IDC: {}'.format(
                 t.get('_id'),
                 usuario.get('username'),
                 usuario.get('puesto'),
                 t.get('tipo_ticket'),
                 t.get('prioridad'),
-                t.get('estado')))
+                t.get('estado'),
+                t.get('asignado_a') or 'sin asignar'))
         PY
       register: tickets_out
       tags: [listar_tickets]
@@ -28,13 +29,17 @@
         msg: "{{ tickets_out.stdout_lines }}"
       tags: [listar_tickets]
 
-    # --- RESOLVER TICKET (guarda la fecha de resolución para las métricas) ---
+    # --- RESOLVER TICKET (exige explicación de la solución) ---
     - name: Marcar ticket como RESUELTO
       ansible.builtin.shell: |
         python3 - <<'PY'
         import os, sys, datetime
         from pymongo import MongoClient
         from bson.objectid import ObjectId
+        resolucion = os.environ.get('RESOLUCION', '').strip()
+        if len(resolucion) < 5:
+            print('ERROR: debes explicar brevemente cómo se resolvió el ticket')
+            sys.exit(1)
         db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
         oid = ObjectId(os.environ['TICKET_ID'].strip())
         t = db.tickets.find_one({'_id': oid})
@@ -47,11 +52,13 @@
         db.tickets.update_one(
             {'_id': oid},
             {'$set': {'estado': 'RESUELTO',
+                      'resolucion': resolucion,
                       'fecha_resolucion': datetime.datetime.now(datetime.timezone.utc)}})
         print('TICKET RESUELTO CORRECTAMENTE')
         PY
       environment:
-        TICKET_ID: "{{ ticket_id }}"
+        TICKET_ID: "{{ ticket_id | default('') }}"
+        RESOLUCION: "{{ resolucion | default('') }}"
       when: ticket_id is defined and ticket_id != ''
       register: resolve_out
       tags: [resolver_ticket]
@@ -62,6 +69,76 @@
       when: ticket_id is defined and ticket_id != ''
       tags: [resolver_ticket]
 
+    # --- ASIGNAR / DESASIGNAR TICKET A UN IDC ---
+    - name: Asignar ticket a un IDC
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys, datetime
+        from pymongo import MongoClient
+        from bson.objectid import ObjectId
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        oid = ObjectId(os.environ['TICKET_ID'].strip())
+        idc = os.environ['IDC'].strip()
+        t = db.tickets.find_one({'_id': oid})
+        if not t:
+            print('ERROR: no existe un ticket con ese ID')
+            sys.exit(1)
+        if t.get('estado') == 'RESUELTO':
+            print('ERROR: el ticket ya está resuelto y no se puede asignar')
+            sys.exit(1)
+        u = db.users.find_one({'username': idc, 'rol': 'IDC'})
+        if not u:
+            print('ERROR: ' + idc + ' no es un usuario IDC')
+            sys.exit(1)
+        if u.get('status') == 'LOCKED':
+            print('ERROR: el IDC ' + idc + ' está bloqueado')
+            sys.exit(1)
+        db.tickets.update_one(
+            {'_id': oid},
+            {'$set': {'asignado_a': idc,
+                      'fecha_asignacion': datetime.datetime.now(datetime.timezone.utc)}})
+        print('TICKET ASIGNADO al IDC ' + idc)
+        PY
+      environment:
+        TICKET_ID: "{{ ticket_id | default('') }}"
+        IDC: "{{ idc_name | default('') }}"
+      when: ticket_id is defined and ticket_id != ''
+      register: asignar_out
+      tags: [asignar_ticket]
+
+    - name: Resultado de asignar ticket
+      ansible.builtin.debug:
+        msg: "[OK] {{ asignar_out.stdout }}"
+      when: asignar_out is defined and asignar_out.stdout is defined
+      tags: [asignar_ticket]
+
+    - name: Quitar asignación de un ticket
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, sys
+        from pymongo import MongoClient
+        from bson.objectid import ObjectId
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        r = db.tickets.update_one(
+            {'_id': ObjectId(os.environ['TICKET_ID'].strip())},
+            {'$unset': {'asignado_a': '', 'fecha_asignacion': ''}})
+        if r.matched_count == 0:
+            print('ERROR: no existe un ticket con ese ID')
+            sys.exit(1)
+        print('ASIGNACIÓN RETIRADA: el ticket quedó sin asignar')
+        PY
+      environment:
+        TICKET_ID: "{{ ticket_id | default('') }}"
+      when: ticket_id is defined and ticket_id != ''
+      register: desasignar_out
+      tags: [desasignar_ticket]
+
+    - name: Resultado de quitar asignación
+      ansible.builtin.debug:
+        msg: "[AVISO] {{ desasignar_out.stdout }}"
+      when: desasignar_out is defined and desasignar_out.stdout is defined
+      tags: [desasignar_ticket]
+
     # --- LISTAR USUARIOS ---
     - name: Listar usuarios y prioridades
       ansible.builtin.shell: |
@@ -69,8 +146,9 @@
         from pymongo import MongoClient
         db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
         for u in db.users.find():
-            print('Usuario: {} | Puesto: {} | Prioridad: {} | Estado: {}'.format(
+            print('Usuario: {} | Tipo: {} | Puesto: {} | Prioridad: {} | Estado: {}'.format(
                 u.get('username'),
+                u.get('rol', 'USUARIO'),
                 u.get('puesto'),
                 u.get('prioridad_base'),
                 u.get('status')))
@@ -83,7 +161,7 @@
         msg: "{{ users_out.stdout_lines }}"
       tags: [listar_usuarios]
 
-    # --- CREAR USUARIO ---
+    # --- CREAR USUARIO (Usuario o IDC) ---
     - name: Crear usuario del portal
       ansible.builtin.shell: |
         python3 - <<'PY'
@@ -93,15 +171,24 @@
         nombre = os.environ['U_NAME'].strip()
         clave = os.environ['U_PASS']
         puesto = os.environ['U_PUESTO'].strip() or 'Empleado'
+        rol = (os.environ.get('U_ROL', 'USUARIO').strip().upper() or 'USUARIO')
         if not re.fullmatch(r'[A-Za-z0-9_.-]{3,30}', nombre):
             print('ERROR: el usuario debe tener de 3 a 30 caracteres (letras, números, punto, guion o guion bajo)')
             sys.exit(1)
         if not clave.strip():
             print('ERROR: la contraseña no puede estar vacía')
             sys.exit(1)
-        if puesto not in PRIORIDADES:
-            print('ERROR: puesto no válido')
+        if rol not in ('USUARIO', 'IDC'):
+            print('ERROR: tipo de usuario no válido')
             sys.exit(1)
+        if rol == 'IDC':
+            puesto = 'IDC'
+            prioridad = 'N/A'
+        else:
+            if puesto not in PRIORIDADES:
+                print('ERROR: puesto no válido')
+                sys.exit(1)
+            prioridad = PRIORIDADES[puesto]
         db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
         if db.users.find_one({'username': nombre}):
             print('ERROR: el usuario ' + nombre + ' ya existe')
@@ -110,15 +197,16 @@
             'username': nombre,
             'password': clave.strip(),
             'puesto': puesto,
-            'prioridad_base': PRIORIDADES[puesto],
+            'prioridad_base': prioridad,
             'status': 'ACTIVE',
-            'rol': 'USUARIO'})
-        print('USUARIO CREADO: ' + nombre + ' (' + puesto + ')')
+            'rol': rol})
+        print('USUARIO CREADO: ' + nombre + ' (' + puesto + ', tipo ' + rol + ')')
         PY
       environment:
         U_NAME: "{{ user_name }}"
         U_PASS: "{{ nueva_password | default('') }}"
         U_PUESTO: "{{ nuevo_puesto | default('Empleado') }}"
+        U_ROL: "{{ tipo_usuario | default('USUARIO') }}"
       when: user_name is defined and user_name != ''
       register: crear_out
       tags: [crear_usuario]
@@ -129,7 +217,83 @@
       when: crear_out is defined and crear_out.stdout is defined
       tags: [crear_usuario]
 
-    # --- ELIMINAR USUARIO (opcionalmente también sus tickets) ---
+    # --- EDITAR USUARIO (nombre, contraseña, puesto, tipo) ---
+    - name: Editar usuario del portal
+      ansible.builtin.shell: |
+        python3 - <<'PY'
+        import os, re, sys
+        from pymongo import MongoClient
+        PRIORIDADES = {'Director': 'CRÍTICA', 'Gerente': 'ALTA', 'Supervisor': 'MEDIA', 'Empleado': 'BAJA'}
+        actual = os.environ['U_NAME'].strip()
+        nuevo = os.environ.get('U_NEW', '').strip() or actual
+        clave = os.environ.get('U_PASS', '').strip()
+        puesto = os.environ.get('U_PUESTO', '').strip()
+        rol = os.environ.get('U_ROL', '').strip().upper()
+        db = MongoClient('mongodb://mongodb:27017/itsm_db').get_database()
+        u = db.users.find_one({'username': actual})
+        if not u:
+            print('ERROR: el usuario ' + actual + ' no existe')
+            sys.exit(1)
+        rol_anterior = u.get('rol', 'USUARIO')
+        if not rol:
+            rol = rol_anterior
+        if rol not in ('USUARIO', 'IDC'):
+            print('ERROR: tipo de usuario no válido')
+            sys.exit(1)
+        if not re.fullmatch(r'[A-Za-z0-9_.-]{3,30}', nuevo):
+            print('ERROR: el usuario debe tener de 3 a 30 caracteres (letras, números, punto, guion o guion bajo)')
+            sys.exit(1)
+        if nuevo != actual and db.users.find_one({'username': nuevo}):
+            print('ERROR: ya existe un usuario llamado ' + nuevo)
+            sys.exit(1)
+        cambios = {'username': nuevo, 'rol': rol}
+        if clave:
+            cambios['password'] = clave
+        if rol == 'IDC':
+            cambios['puesto'] = 'IDC'
+            cambios['prioridad_base'] = 'N/A'
+        else:
+            if puesto not in PRIORIDADES:
+                puesto = u.get('puesto') if u.get('puesto') in PRIORIDADES else 'Empleado'
+            cambios['puesto'] = puesto
+            cambios['prioridad_base'] = PRIORIDADES[puesto]
+        db.users.update_one({'username': actual}, {'$set': cambios})
+        if nuevo != actual:
+            db.tickets.update_many({'usuario.username': actual}, {'$set': {'usuario.username': nuevo}})
+            db.tickets.update_many({'asignado_a': actual}, {'$set': {'asignado_a': nuevo}})
+        if rol == 'USUARIO':
+            db.tickets.update_many(
+                {'usuario.username': nuevo, 'estado': 'PENDIENTE'},
+                {'$set': {'usuario.puesto': cambios['puesto']}})
+            if rol_anterior == 'IDC':
+                db.tickets.update_many(
+                    {'asignado_a': nuevo},
+                    {'$unset': {'asignado_a': '', 'fecha_asignacion': ''}})
+        detalle = []
+        if nuevo != actual:
+            detalle.append('nombre ' + actual + ' -> ' + nuevo)
+        if clave:
+            detalle.append('contraseña actualizada')
+        detalle.append('tipo ' + rol + ', puesto ' + cambios['puesto'])
+        print('USUARIO ACTUALIZADO: ' + '; '.join(detalle))
+        PY
+      environment:
+        U_NAME: "{{ user_name }}"
+        U_NEW: "{{ nuevo_nombre | default('') }}"
+        U_PASS: "{{ nueva_password | default('') }}"
+        U_PUESTO: "{{ nuevo_puesto | default('') }}"
+        U_ROL: "{{ tipo_usuario | default('') }}"
+      when: user_name is defined and user_name != ''
+      register: editar_out
+      tags: [editar_usuario]
+
+    - name: Resultado de editar usuario
+      ansible.builtin.debug:
+        msg: "[OK] {{ editar_out.stdout }}"
+      when: editar_out is defined and editar_out.stdout is defined
+      tags: [editar_usuario]
+
+    # --- ELIMINAR USUARIO ---
     - name: Eliminar usuario del portal
       ansible.builtin.shell: |
         python3 - <<'PY'
@@ -141,11 +305,17 @@
             print('ERROR: el usuario ' + nombre + ' no existe')
             sys.exit(1)
         db.users.delete_one({'username': nombre})
+        liberados = db.tickets.update_many(
+            {'asignado_a': nombre},
+            {'$unset': {'asignado_a': '', 'fecha_asignacion': ''}}).modified_count
+        extra = ''
+        if liberados:
+            extra = ' | {} tickets asignados quedaron sin asignar'.format(liberados)
         if os.environ.get('BORRAR_TICKETS') == 'si':
             n = db.tickets.delete_many({'usuario.username': nombre}).deleted_count
-            print('USUARIO ELIMINADO: ' + nombre + ' (y {} tickets)'.format(n))
+            print('USUARIO ELIMINADO: ' + nombre + ' (y {} tickets)'.format(n) + extra)
         else:
-            print('USUARIO ELIMINADO: ' + nombre + ' (sus tickets se conservaron)')
+            print('USUARIO ELIMINADO: ' + nombre + ' (sus tickets se conservaron)' + extra)
         PY
       environment:
         U_NAME: "{{ user_name }}"
@@ -160,7 +330,7 @@
       when: eliminar_out is defined and eliminar_out.stdout is defined
       tags: [eliminar_usuario]
 
-    # --- CAMBIAR PUESTO (recalcula la prioridad base y actualiza sus tickets pendientes) ---
+    # --- CAMBIAR SOLO EL PUESTO ---
     - name: Reclasificar puesto de un usuario
       ansible.builtin.shell: |
         python3 - <<'PY'

@@ -8,38 +8,40 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <style>
     :root {
-      --bg-main: #0b2a85; --bg-main-2: #071c5c; --bg-card: #123b9e; --bg-inset: #0a2a78;
-      --sky: #5ec8ff; --sky-hover: #8bd9ff; --sky-ink: #04204f; --red: #e4202d;
-      --border-color: rgba(255,255,255,.18); --text-muted: #b7c6ee;
+      --bg-main: #04164f; --bg-main-2: #020b30; --bg-card: #08256f; --bg-inset: #051a56;
+      --sky: #38bdf8; --sky-hover: #7dd3fc; --sky-ink: #032046; --red: #e11d2e;
+      --border-color: rgba(110, 150, 240, 0.28); --text-muted: #a9b9e6;
     }
     body {
       min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px;
-      background: linear-gradient(160deg, var(--bg-main), var(--bg-main-2)) fixed; color: #fff;
+      background: linear-gradient(180deg, var(--bg-main), var(--bg-main-2)) fixed; color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
     .auth-card {
-      width: 100%; max-width: 400px; padding: 32px; border-radius: 16px;
+      width: 100%; max-width: 400px; padding: 28px 32px 32px; border-radius: 16px;
       background: var(--bg-card); border: 1px solid var(--border-color); border-top: 4px solid var(--red);
       box-shadow: 0 20px 50px rgba(0,0,0,.35);
     }
-    .auth-icon { font-size: 2.4rem; color: var(--sky); }
+    /* El logo trae un fondo azul cuadrado: se mezcla con el fondo de la tarjeta y se difumina en los bordes */
+    .logo-mobil {
+      display: block; width: 230px; max-width: 80%; margin: -34px auto -34px;
+      mix-blend-mode: lighten;
+      -webkit-mask-image: radial-gradient(ellipse at center, #000 52%, transparent 74%);
+      mask-image: radial-gradient(ellipse at center, #000 52%, transparent 74%);
+    }
     .muted { color: var(--text-muted); }
-    .form-control {
-      background: var(--bg-inset); border: 1px solid var(--border-color); color: #fff; padding: 10px 14px;
-    }
-    .form-control:focus { background: var(--bg-inset); color: #fff; border-color: var(--sky); box-shadow: 0 0 0 .2rem rgba(94,200,255,.25); }
-    .form-control::placeholder { color: #9db0e6; }
-    .btn-sky {
-      background: var(--sky); border-color: var(--sky); color: var(--sky-ink); font-weight: 700; padding: 10px;
-    }
+    .form-control { background: var(--bg-inset); border: 1px solid var(--border-color); color: #fff; padding: 10px 14px; }
+    .form-control:focus { background: var(--bg-inset); color: #fff; border-color: var(--sky); box-shadow: 0 0 0 .2rem rgba(56,189,248,.25); }
+    .form-control::placeholder { color: #8fa3dd; }
+    .btn-sky { background: var(--sky); border-color: var(--sky); color: var(--sky-ink); font-weight: 700; padding: 10px; }
     .btn-sky:hover { background: var(--sky-hover); border-color: var(--sky-hover); color: var(--sky-ink); }
   </style>
 </head>
 <body>
   <div class="auth-card">
     <div class="text-center mb-4">
-      <i class="bi bi-cpu-fill auth-icon"></i>
-      <h1 class="h4 fw-bold mt-2 mb-1">Panel Administrativo</h1>
+      <img src="{{ url_for('static', filename='img/mobil.png') }}" alt="Mobil" class="logo-mobil">
+      <h1 class="h5 fw-bold mt-2 mb-1">Panel Administrativo</h1>
       <p class="muted small mb-0">Acceso de administración</p>
     </div>
 
